@@ -2,12 +2,16 @@
 #include <opencv2/calib3d.hpp>      // <- declaramos findHomography
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
+#include "opencv2/xfeatures2d.hpp"
 #include <iostream>
 #include <chrono>
 #include <fstream>
 
 using namespace std;
 using namespace cv;
+using namespace cv::xfeatures2d;
+using std::cout;
+using std::endl;
 const float inlier_threshold = 2.5f; // Distance threshold to identify inliers with homography check
 const float nn_match_ratio = 0.8f;   // Nearest neighbor matching ratio
 
@@ -24,13 +28,11 @@ int main(int argc, char* argv[]) {
     CommandLineParser parser(argc, argv,
                              "{@img1 | 16.bmp | input image 1}"
                              "{@img2 | 17.bmp | input image 2}"
-                             "{@img3 | 18.bmp | input image 3}"
                              "{@size | 3      | input threshold size}");
     
     // Imprimimos os parâmetros fornecidos
     cout << "img1 = " << parser.get<String>("@img1") 
          << "\nimg2 = " << parser.get<String>("@img2") 
-         << "\nimg3= " << parser.get<String>("@img3") 
          << "\nsize = " << parser.get<String>("@size") << "\n";
     
     auto t2 = high_resolution_clock::now();
@@ -46,8 +48,13 @@ int main(int argc, char* argv[]) {
 	// Não usaremos as imagens de exemplo do opencv
     Mat img1 = imread( parser.get<String>("@img1"), IMREAD_GRAYSCALE);
     Mat img2 = imread( parser.get<String>("@img2"), IMREAD_GRAYSCALE);
-    Mat img3 = imread( parser.get<String>("@img3), IMREAD_GRAYSCALE);
     double tsize = parser.get<double>("@size");
+    if ( img1.empty() || img2.empty() )
+    {
+        cout << "Could not open or find the image!\n" << endl;
+        parser.printMessage();
+        return -1;
+    }
     
     t2 = high_resolution_clock::now();
 
@@ -57,24 +64,24 @@ int main(int argc, char* argv[]) {
     cout <<"Lendo os arquivos= "
 		 << ms_double.count() << "ms\n";
     
-    
-    
-    // O código segue o mesmo do tutorial com akaze
-    vector<KeyPoint> kpts1, kpts2, kpts3;
-    Mat desc1, desc2, desc3;
-    Ptr<AKAZE> akaze = AKAZE::create();
-    
     t1 = high_resolution_clock::now();
     
-    akaze->detect(img1, kpts1);
-    akaze->detect(img2, kpts2);
-    akaze->detect(img3, kpts3);
+    // O código segue o mesmo do tutorial com AKAZE
+    vector<KeyPoint> kpts1, kpts2;
+    Mat desc1, desc2;
+    Ptr<SIFT> SIFT = SIFT::create();
+    SIFT->detect(img1, kpts1, noArray());
+    SIFT->detect(img2, kpts2, noArray());
     
     t2 = high_resolution_clock::now();
     
-    //Escrevendo os pontos detectados
-    
-    ofstream kpoint1("kpts1_Akaze.txt");
+    /* Getting number of milliseconds as a double. */
+    ms_double = t2 - t1;
+
+    cout <<"Detect= "
+		 << ms_double.count() << "ms\n";
+		 
+	ofstream kpoint1("kpts1_SIFT.txt");
     
     for(size_t i = 0; i < kpts1.size(); i++) {
         kpoint1 << kpts1[i].pt.x << " " << kpts1[i].pt.y << endl;
@@ -82,33 +89,18 @@ int main(int argc, char* argv[]) {
     
     kpoint1.close();
     
-    ofstream kpoint2("kpts2_Akaze.txt");
+    ofstream kpoint2("kpts2_SIFT.txt");
     
     for(size_t i = 0; i < kpts2.size(); i++) {
         kpoint2 << kpts2[i].pt.x << " " << kpts2[i].pt.y << endl;
     }
     
     kpoint2.close();
-    
-    ofstream kpoint3("kpts3_Akaze.txt");
-    
-    for(size_t i = 0; i < kpts3.size(); i++) {
-        kpoint3 << kpts3[i].pt.x << " " << kpts3[i].pt.y << endl;
-    }
-    
-    kpoint3.close();
-    
-    /* Getting number of milliseconds as a double. */
-    ms_double = t2 - t1;
-
-    cout <<"Detect= "
-		 << ms_double.count() << "ms\n";
 	    
     t1 = high_resolution_clock::now();
     
-    akaze->compute(img1, kpts1, desc1);
-    akaze->compute(img2, kpts2, desc2);
-    akaze->compute(img3, kpts3, desc3);
+    SIFT->compute(img1, kpts1, desc1);
+    SIFT->compute(img2, kpts2, desc2);
     
     t2 = high_resolution_clock::now();
     
@@ -119,8 +111,7 @@ int main(int argc, char* argv[]) {
 		 << ms_double.count() << "ms\n";
     
     t1 = high_resolution_clock::now();
-    
-    BFMatcher matcher(NORM_HAMMING);
+    BFMatcher matcher(NORM_L2);
     vector< vector<DMatch> > nn_matches;
     matcher.knnMatch(desc1, desc2, nn_matches, 2);
     vector<KeyPoint> matched1, matched2;
@@ -133,27 +124,14 @@ int main(int argc, char* argv[]) {
             matched2.push_back(kpts2[first.trainIdx]);
         }
     }
+    
     t2 = high_resolution_clock::now();
- 
+    
     /* Getting number of milliseconds as a double. */
     ms_double = t2 - t1;
 
     cout <<"BFMatcher= "
 		 << ms_double.count() << "ms\n";
-		 
-	BFMatcher matcher(NORM_HAMMING);
-    vector< vector<DMatch> > nn2_matches;
-    matcher.knnMatch(desc2, desc3, nn2_matches, 2);
-    vector<KeyPoint> matched1, matched2;
-    for(size_t i = 0; i < nn_matches.size(); i++) {
-        DMatch first = nn_matches[i][0];
-        float dist1 = nn_matches[i][0].distance;
-        float dist2 = nn_matches[i][1].distance;
-        if(dist1 < nn_match_ratio * dist2) {
-            matched1.push_back(kpts1[first.queryIdx]);
-            matched2.push_back(kpts2[first.trainIdx]);
-        }
-    }
     
     t1 = high_resolution_clock::now();
     
@@ -173,7 +151,7 @@ int main(int argc, char* argv[]) {
     
     t1 = high_resolution_clock::now();
     
-    // O código segue o mesmo do tutorial com akaze
+    // O código segue o mesmo do tutorial com AKAZE
     vector<DMatch> good_matches;
     vector<KeyPoint> inliers1, inliers2;
     for(size_t i = 0; i < matched1.size(); i++) {
@@ -200,8 +178,8 @@ int main(int argc, char* argv[]) {
     cout <<"Correlatos= "
 		 << ms_double.count() << "ms\n";
 		 
-	ofstream bonsMatches("Matches_Akaze.txt");
-	ofstream ENH("ENH_Akaze.txt");
+	ofstream bonsMatches("Matches_SIFT.txt");
+	ofstream ENH("ENH_SIFT.txt");
     
     size_t n = inliers1.size();
     for(size_t i = 0; i < inliers1.size(); i++) {
@@ -220,7 +198,7 @@ int main(int argc, char* argv[]) {
     
     Mat res;
     drawMatches(img1, inliers1, img2, inliers2, good_matches, res);
-    imwrite("akaze_result.png", res);
+    imwrite("SIFT_result.png", res);
     
     t2 = high_resolution_clock::now();
 
@@ -231,7 +209,7 @@ int main(int argc, char* argv[]) {
 		 << ms_double.count() << "ms\n";
     
     double inlier_ratio = inliers1.size() / (double) matched1.size();
-    cout << "A-KAZE Matching Results" << endl;
+    cout << "SIFT Matching Results" << endl;
     cout << "*******************************" << endl;
     cout << "# Keypoints 1:                        \t" << kpts1.size() << endl;
     cout << "# Keypoints 2:                        \t" << kpts2.size() << endl;
@@ -239,7 +217,6 @@ int main(int argc, char* argv[]) {
     cout << "# Inliers:                            \t" << inliers1.size() << endl;
     cout << "# Inliers Ratio:                      \t" << inlier_ratio << endl;
     cout << endl;
-    
     //imshow("result", res);
     waitKey();
     return 0;

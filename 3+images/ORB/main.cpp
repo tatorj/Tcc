@@ -24,18 +24,18 @@ int main(int argc, char* argv[]) {
     CommandLineParser parser(argc, argv,
                              "{@img1 | 16.bmp | input image 1}"
                              "{@img2 | 17.bmp | input image 2}"
-                             "{@img3 | 18.bmp | input image 3}"
+                             "{@nfeatures | 100000 | input number of features}"
                              "{@size | 3      | input threshold size}");
     
     // Imprimimos os parâmetros fornecidos
     cout << "img1 = " << parser.get<String>("@img1") 
-         << "\nimg2 = " << parser.get<String>("@img2") 
-         << "\nimg3= " << parser.get<String>("@img3") 
+         << "\nimg2 = " << parser.get<String>("@img2")
+         << "\nnfeatures = " << parser.get<String>("@nfeatures") 
          << "\nsize = " << parser.get<String>("@size") << "\n";
-    
+         
     auto t2 = high_resolution_clock::now();
 
-    /* Getting number of milliseconds as a double. */
+    // Calculando os milisegundos
     duration<double, std::milli> ms_double = t2 - t1;
 	
 	cout <<"Abrindo os arquivos= "
@@ -46,35 +46,36 @@ int main(int argc, char* argv[]) {
 	// Não usaremos as imagens de exemplo do opencv
     Mat img1 = imread( parser.get<String>("@img1"), IMREAD_GRAYSCALE);
     Mat img2 = imread( parser.get<String>("@img2"), IMREAD_GRAYSCALE);
-    Mat img3 = imread( parser.get<String>("@img3), IMREAD_GRAYSCALE);
+    int nfeatures = parser.get<int>("@nfeatures");
     double tsize = parser.get<double>("@size");
     
     t2 = high_resolution_clock::now();
 
-    /* Getting number of milliseconds as a double. */
+    // Calculando o tempo em ms
     ms_double = t2 - t1;
 
     cout <<"Lendo os arquivos= "
 		 << ms_double.count() << "ms\n";
     
-    
-    
-    // O código segue o mesmo do tutorial com akaze
-    vector<KeyPoint> kpts1, kpts2, kpts3;
-    Mat desc1, desc2, desc3;
-    Ptr<AKAZE> akaze = AKAZE::create();
-    
     t1 = high_resolution_clock::now();
     
-    akaze->detect(img1, kpts1);
-    akaze->detect(img2, kpts2);
-    akaze->detect(img3, kpts3);
+    // O código segue o mesmo do tutorial com ORB
+    vector<KeyPoint> kpts1, kpts2;
+    Mat desc1, desc2;
+    Ptr<ORB> ORB = ORB::create(nfeatures);
+    ORB->detect(img1, kpts1, noArray());
+    ORB->detect(img2, kpts2, noArray());
     
     t2 = high_resolution_clock::now();
     
-    //Escrevendo os pontos detectados
-    
-    ofstream kpoint1("kpts1_Akaze.txt");
+    /* Getting number of milliseconds as a double. */
+    ms_double = t2 - t1;
+
+    cout <<"Detect= "
+		 << ms_double.count() << "ms\n";
+		 
+		 
+	ofstream kpoint1("kpts1_ORB.txt");
     
     for(size_t i = 0; i < kpts1.size(); i++) {
         kpoint1 << kpts1[i].pt.x << " " << kpts1[i].pt.y << endl;
@@ -82,33 +83,18 @@ int main(int argc, char* argv[]) {
     
     kpoint1.close();
     
-    ofstream kpoint2("kpts2_Akaze.txt");
+    ofstream kpoint2("kpts2_ORB.txt");
     
     for(size_t i = 0; i < kpts2.size(); i++) {
         kpoint2 << kpts2[i].pt.x << " " << kpts2[i].pt.y << endl;
     }
     
     kpoint2.close();
-    
-    ofstream kpoint3("kpts3_Akaze.txt");
-    
-    for(size_t i = 0; i < kpts3.size(); i++) {
-        kpoint3 << kpts3[i].pt.x << " " << kpts3[i].pt.y << endl;
-    }
-    
-    kpoint3.close();
-    
-    /* Getting number of milliseconds as a double. */
-    ms_double = t2 - t1;
-
-    cout <<"Detect= "
-		 << ms_double.count() << "ms\n";
 	    
     t1 = high_resolution_clock::now();
     
-    akaze->compute(img1, kpts1, desc1);
-    akaze->compute(img2, kpts2, desc2);
-    akaze->compute(img3, kpts3, desc3);
+    ORB->compute(img1, kpts1, desc1);
+    ORB->compute(img2, kpts2, desc2);
     
     t2 = high_resolution_clock::now();
     
@@ -133,27 +119,14 @@ int main(int argc, char* argv[]) {
             matched2.push_back(kpts2[first.trainIdx]);
         }
     }
+    
     t2 = high_resolution_clock::now();
- 
-    /* Getting number of milliseconds as a double. */
+    
+    // Calculando o tempo em ms
     ms_double = t2 - t1;
 
     cout <<"BFMatcher= "
 		 << ms_double.count() << "ms\n";
-		 
-	BFMatcher matcher(NORM_HAMMING);
-    vector< vector<DMatch> > nn2_matches;
-    matcher.knnMatch(desc2, desc3, nn2_matches, 2);
-    vector<KeyPoint> matched1, matched2;
-    for(size_t i = 0; i < nn_matches.size(); i++) {
-        DMatch first = nn_matches[i][0];
-        float dist1 = nn_matches[i][0].distance;
-        float dist2 = nn_matches[i][1].distance;
-        if(dist1 < nn_match_ratio * dist2) {
-            matched1.push_back(kpts1[first.queryIdx]);
-            matched2.push_back(kpts2[first.trainIdx]);
-        }
-    }
     
     t1 = high_resolution_clock::now();
     
@@ -165,7 +138,7 @@ int main(int argc, char* argv[]) {
     
     t2 = high_resolution_clock::now();
  
-    /* Getting number of milliseconds as a double. */
+    // Calculando o tempo em ms
     ms_double = t2 - t1;
 
     cout <<"Homography= "
@@ -173,7 +146,7 @@ int main(int argc, char* argv[]) {
     
     t1 = high_resolution_clock::now();
     
-    // O código segue o mesmo do tutorial com akaze
+    // O código segue o mesmo do tutorial com ORB
     vector<DMatch> good_matches;
     vector<KeyPoint> inliers1, inliers2;
     for(size_t i = 0; i < matched1.size(); i++) {
@@ -194,14 +167,14 @@ int main(int argc, char* argv[]) {
     
     t2 = high_resolution_clock::now();
 
-    /* Getting number of milliseconds as a double. */
+    // Calculando o tempo em ms
     ms_double = t2 - t1;
 
     cout <<"Correlatos= "
 		 << ms_double.count() << "ms\n";
 		 
-	ofstream bonsMatches("Matches_Akaze.txt");
-	ofstream ENH("ENH_Akaze.txt");
+	ofstream bonsMatches("Matches_ORB.txt");
+	ofstream ENH("ENH_ORB.txt");
     
     size_t n = inliers1.size();
     for(size_t i = 0; i < inliers1.size(); i++) {
@@ -220,18 +193,18 @@ int main(int argc, char* argv[]) {
     
     Mat res;
     drawMatches(img1, inliers1, img2, inliers2, good_matches, res);
-    imwrite("akaze_result.png", res);
+    imwrite("ORB_result.png", res);
     
     t2 = high_resolution_clock::now();
 
-    /* Getting number of milliseconds as a double. */
+    // Calculando o tempo em ms
     ms_double = t2 - t1;
 
     cout <<"Draw matches= "
 		 << ms_double.count() << "ms\n";
     
     double inlier_ratio = inliers1.size() / (double) matched1.size();
-    cout << "A-KAZE Matching Results" << endl;
+    cout << "ORB Matching Results" << endl;
     cout << "*******************************" << endl;
     cout << "# Keypoints 1:                        \t" << kpts1.size() << endl;
     cout << "# Keypoints 2:                        \t" << kpts2.size() << endl;
@@ -239,7 +212,6 @@ int main(int argc, char* argv[]) {
     cout << "# Inliers:                            \t" << inliers1.size() << endl;
     cout << "# Inliers Ratio:                      \t" << inlier_ratio << endl;
     cout << endl;
-    
     //imshow("result", res);
     waitKey();
     return 0;

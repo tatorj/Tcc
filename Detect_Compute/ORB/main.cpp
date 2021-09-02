@@ -24,7 +24,7 @@ int main(int argc, char* argv[]) {
     CommandLineParser parser(argc, argv,
                              "{@img1 | 16.bmp | input image 1}"
                              "{@img2 | 17.bmp | input image 2}"
-                             "{@nfeatures | 5000 | input number of features}"
+                             "{@nfeatures | 100000 | input number of features}"
                              "{@size | 3      | input threshold size}");
     
     // Imprimimos os parâmetros fornecidos

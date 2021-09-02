@@ -204,7 +204,7 @@ int main(int argc, char* argv[]) {
 		 << ms_double.count() << "ms\n";
     
     double inlier_ratio = inliers1.size() / (double) matched1.size();
-    cout << "AKAZE Matching Results" << endl;
+    cout << "A-KAZE Matching Results" << endl;
     cout << "*******************************" << endl;
     cout << "# Keypoints 1:                        \t" << kpts1.size() << endl;
     cout << "# Keypoints 2:                        \t" << kpts2.size() << endl;
@@ -212,20 +212,7 @@ int main(int argc, char* argv[]) {
     cout << "# Inliers:                            \t" << inliers1.size() << endl;
     cout << "# Inliers Ratio:                      \t" << inlier_ratio << endl;
     cout << endl;
-	
-	ofstream results("Akaze_Results.txt");
-	
-	results << "AKAZE Matching Results" << endl;
-    << "*******************************" << endl;
-    << "# Keypoints 1:                        \t" << kpts1.size() << endl;
-    << "# Keypoints 2:                        \t" << kpts2.size() << endl;
-    << "# Matches:                            \t" << matched1.size() << endl;
-    << "# Inliers:                            \t" << inliers1.size() << endl;
-    << "# Inliers Ratio:                      \t" << inlier_ratio << endl;
-    << endl;
-    results.close();
-	
-	
+    
     //imshow("result", res);
     waitKey();
     return 0;

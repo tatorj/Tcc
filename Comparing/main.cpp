@@ -1,14 +1,16 @@
 #include <iostream>
+#include <iomanip>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
 #include <string>
 #include <vector>
-#include <opencv2/core/utility.hpp>
+#include <cmath>
+//#include <opencv2/core/utility.hpp>
 
 
 using namespace std;
-using namespace cv;
+//using namespace cv;
 
 using TYPE = double;
 
@@ -21,7 +23,7 @@ template< typename T > vector< vector<T> > loadtxt( const string &filename )
     {
         stringstream ss( line );
         vector<T> row;
-        for ( T d; ss >> d; ) row.push_back( d );
+        for ( T d; ss >> d; ) row.push_back( trunc(d*1)/1.0 );
         data.push_back( row );
     }
     return data;
@@ -43,117 +45,92 @@ template< typename T > void concat( vector< vector<T> > &vector1, const vector< 
     vector1.insert( vector1.end(), vector2.begin(), vector2.end() );
 }
 
+template< typename T > void comparing( vector< vector<T> > &data, vector< size_t > &range )
+{
+	// Para cada metodo i 
+	for (size_t method_i = 0; method_i < range.size() - 2; method_i++) {
+		// Comparamos aos metodos j subsequentes
+		for (size_t method_j = method_i + 1; method_j < range.size() - 1; method_j++) {
+			// Todos os pontos do método i
+			for (size_t i_idx = range[method_i]; i_idx < range[method_i + 1]; i_idx++) {
+				auto i_x = data[i_idx][0], i_y = data[i_idx][1];
+				// Com todos os pontos do método j
+				for (size_t j_idx = range[method_j]; j_idx < range[method_j + 1]; j_idx++) {
+					auto j_x = data[j_idx][0], j_y = data[j_idx][1];
+					// Se os métodos i e j detectam um mesmo ponto
+					if (i_x == j_x && i_y == j_y) {
+						// Registramos a detecção conjunta para o ponto no método i
+						if (data[i_idx].size() == 2) {
+							data[i_idx].push_back(2);
+							for (size_t k = 0; k < range.size() - 1; k++)
+								data[i_idx].push_back(-1);
+							data[i_idx][method_i + 3] = i_idx - range[method_i];
+							data[i_idx][method_j + 3] = j_idx - range[method_j];
+						} // Ou atualizamos um registro anterior
+						else { 
+							data[i_idx][2] += 1;
+							data[i_idx][method_j + 3] = j_idx - range[method_j];
+						}
+						// O mesmo vale para o ponto no método j
+						if (data[j_idx].size() == 2) {
+							data[j_idx].push_back(2);
+							for (size_t k = 0; k < range.size() - 1; k++)
+								data[j_idx].push_back(-1);
+							data[j_idx][method_i + 3] = i_idx - range[method_i];
+							data[j_idx][method_j + 3] = j_idx - range[method_j];
+						} else {
+							data[j_idx][2] += 1;
+							data[j_idx][method_i + 3] = i_idx - range[method_i];
+						}
+						// E passamos ao proximo ponto do método i
+						break;
+					}
+				}
+			}
+		}
+	}
+	// Identificando pontos chave são exclusivos de um método
+	for (size_t method_i = 0; method_i < range.size() - 1; method_i++) {
+		for (size_t i_idx = range[method_i]; i_idx < range[method_i + 1]; i_idx++) {
+			if (data[i_idx].size() == 2) {
+				data[i_idx].push_back(1);
+				for (size_t k = 0; k < range.size() - 1; k++)
+					data[i_idx].push_back(-1);
+				data[i_idx][method_i + 3] = i_idx - range[method_i];
+			}
+		}
+	}
+}
+
 //======================================================================
 int main(int argc, char* argv[])
 {
     
-    CommandLineParser parser(argc, argv,
-                             "{@AKAZE | kpts1_Akaze.txt | Input Akaze Matches}"
-                             "{@ORB | kpts1_ORB.txt | Input ORB Matches}"
-                             "{@SIFT | kpts1_SIFT.txt | Input SIFT Matches}"
-                             "{@SURF | kpts1_SURF.txt | Input SURF Matches}");
+    //CommandLineParser parser(argc, argv,
+    //                         "{@AKAZE | kpts1_Akaze.txt | Input Akaze Matches}"
+    //                         "{@ORB | kpts1_ORB.txt | Input ORB Matches}"
+    //                         "{@SIFT | kpts1_SIFT.txt | Input SIFT Matches}"
+    //                         "{@SURF | kpts1_SURF.txt | Input SURF Matches}");
     
-    auto data = loadtxt<TYPE>( parser.get<String>("@AKAZE").c_str() );
+    //auto data = loadtxt<TYPE>( parser.get<String>("@AKAZE").c_str() );
+    auto data = loadtxt<TYPE>( "kpts1_Akaze.txt" );
     auto akaze_end = data.size();
-    auto temp = loadtxt<TYPE>( parser.get<String>("@ORB").c_str() );
+    //auto temp = loadtxt<TYPE>( parser.get<String>("@ORB").c_str() );
+    auto temp = loadtxt<TYPE>( "kpts1_ORB.txt" );
     concat(data,temp);
     auto orb_end = data.size();
-    temp = loadtxt<TYPE>( parser.get<String>("@SIFT").c_str() );
+    //temp = loadtxt<TYPE>( parser.get<String>("@SIFT").c_str() );
+    temp = loadtxt<TYPE>( "kpts1_SIFT.txt" );
     concat(data,temp);
     auto sift_end = data.size();
-    temp = loadtxt<TYPE>( parser.get<String>("@SURF").c_str() );
+    //temp = loadtxt<TYPE>( parser.get<String>("@SURF").c_str() );
+    temp = loadtxt<TYPE>( "kpts1_SURF.txt" );
     concat(data,temp);
     auto surf_end = data.size();
     
-    for (decltype(akaze_end) akaze_idx = 0; akaze_idx < akaze_end; akaze_idx++) {
-        auto x_akaze = data[akaze_idx][0], y_akaze = data[akaze_idx][1];
-        for (decltype(akaze_end) orb_idx = akaze_end; orb_idx < orb_end; orb_idx++) {
-            auto   x_orb = data[orb_idx][0],     y_orb = data[orb_idx][1];
-            if (x_akaze == x_orb && y_akaze == y_orb) {
-                if (data[akaze_idx].size() == 2)
-                    data[akaze_idx].push_back(2);
-                else {
-                    auto old = data[akaze_idx].back();
-                    data[akaze_idx].pop_back();
-                    data[akaze_idx].push_back( old + 1 );
-                }
-                break;
-            }
-        }
-        for (decltype(orb_end) sift_idx = orb_end; sift_idx < sift_end; sift_idx++) {
-            auto   x_sift = data[sift_idx][0],     y_sift = data[sift_idx][1];
-            if (x_akaze == x_sift && y_akaze == y_sift) {
-                if (data[akaze_idx].size() == 2)
-                    data[akaze_idx].push_back(2);
-                else {
-                    auto old = data[akaze_idx].back();
-                    data[akaze_idx].pop_back();
-                    data[akaze_idx].push_back( old + 1 );
-                }
-                break;
-            }
-        }
-        for (decltype(akaze_end) surf_idx = sift_end; surf_idx < surf_end; surf_idx++) {
-            auto   x_surf = data[surf_idx][0],     y_surf = data[surf_idx][1];
-            if (x_akaze == x_surf && y_akaze == y_surf) {
-                if (data[akaze_idx].size() == 2)
-                    data[akaze_idx].push_back(2);
-                else {
-                    auto old = data[akaze_idx].back();
-                    data[akaze_idx].pop_back();
-                    data[akaze_idx].push_back( old + 1 );
-                }
-                break;
-            }
-        }
-    }
+    vector<size_t> range = {0, akaze_end, orb_end, sift_end, surf_end};
     
-    for (decltype(akaze_end) orb_idx = akaze_end; orb_idx < orb_end; orb_idx++) {
-        auto x_orb = data[orb_idx][0], y_orb = data[orb_idx][1];
-        for (decltype(orb_end) sift_idx = orb_end; sift_idx < sift_end; sift_idx++) {
-            auto x_sift = data[sift_idx][0], y_sift = data[sift_idx][1];
-            if (x_orb == x_sift && y_orb == y_sift) {
-                if (data[orb_idx].size() == 2)
-                    data[orb_idx].push_back(2);
-                else {
-                    auto old = data[orb_idx].back();
-                    data[orb_idx].pop_back();
-                    data[orb_idx].push_back( old + 1 );
-                }
-                break;
-            }
-        }
-        for (decltype(sift_end) surf_idx = sift_end; surf_idx < surf_end; surf_idx++) {
-            auto   x_surf = data[surf_idx][0],     y_surf = data[surf_idx][1];
-            if (x_orb == x_surf && y_orb == y_surf) {
-                if (data[orb_idx].size() == 2)
-                    data[orb_idx].push_back(2);
-                else {
-                    auto old = data[orb_idx].back();
-                    data[orb_idx].pop_back();
-                    data[orb_idx].push_back( old + 1 );
-                }
-                break;
-            }
-        }
-    }
-    
-    for (decltype(orb_end) sift_idx = orb_end; sift_idx < sift_end; sift_idx++) {
-        auto x_sift = data[sift_idx][0], y_sift = data[sift_idx][1];
-        for (decltype(sift_end) surf_idx = sift_end; surf_idx < surf_end; surf_idx++) {
-            auto   x_surf = data[surf_idx][0],     y_surf = data[surf_idx][1];
-            if (x_sift == x_surf && y_sift == y_surf) {
-                if (data[sift_idx].size() == 2)
-                    data[sift_idx].push_back(2);
-                else {
-                    auto old = data[sift_idx].back();
-                    data[sift_idx].pop_back();
-                    data[sift_idx].push_back( old + 1 );
-                }
-                break;
-            }
-        }
-    }
+    comparing(data, range);
     
     ofstream out( "saida.txt" );
     print( data , out );

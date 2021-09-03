@@ -263,8 +263,8 @@ int main(int argc, char* argv[]) {
     
     vector<KeyPoint> pmatches1, pmatches2, pmatches3;    
     for (size_t i=0; i < inliers2.size(); i++){
-		for(size_t c=0; inliers3.size(); c++){
-			if (inliers2[i].pt.x = inliers3[c].pt.x/* && inliers2[i].pt.y = inliers3[c].pt.y*/) {
+        for(size_t c=0; c < inliers3.size(); c++){
+            if (inliers2[i].pt.x == inliers3[c].pt.x && inliers2[i].pt.y == inliers3[c].pt.y) {
 			int new_i = static_cast<int>(pmatches1.size());
             pmatches1.push_back(inliers1[i]);
             pmatches2.push_back(inliers2[i]);

@@ -290,7 +290,7 @@ int main(int argc, char* argv[]) {
     bonsMatches3.close();
     ENH3.close();
 	
-    /*
+    
     t1 = high_resolution_clock::now();
     
     Mat res;
@@ -304,7 +304,7 @@ int main(int argc, char* argv[]) {
 
     cout <<"Draw matches= "
 		 << ms_double.count() << "ms\n";
-    */
+    
     
     double inlier_ratio = inliers1.size() / (double) matched1.size();
     cout << "A-KAZE Matching Results" << endl;

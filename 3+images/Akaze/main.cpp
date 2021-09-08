@@ -29,8 +29,8 @@ int main(int argc, char* argv[]) {
     
     // Imprimimos os parâmetros fornecidos
     cout << "img1 = " << parser.get<String>("@img1") 
-         << "\nimg2 = " << parser.get<String>("@img2") 
-         << "\nimg3= " << parser.get<String>("@img3") 
+         << "\nimg2 = " << parser.get<String>("@img2")
+         << "\nimg3= " << parser.get<String>("@img3")
          << "\nsize = " << parser.get<String>("@size") << "\n";
     
     auto t2 = high_resolution_clock::now();
@@ -250,8 +250,8 @@ int main(int argc, char* argv[]) {
     
     n = inliers3.size();
     for(size_t i = 0; i < inliers3.size(); i++) {
-        bonsMatches << "2" << "\t" << i+15 << "\t" << inliers3[i].pt.x << "\t" << inliers3[i].pt.y << "\n" << "3" << "\t" << i+15 << "\t" << inliers4[i].pt.x << "\t" << inliers4[i].pt.y;
-		ENH << i+15 << "\t" << "Photogrammetric" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0";
+        bonsMatches2 << "2" << "\t" << i+15 << "\t" << inliers3[i].pt.x << "\t" << inliers3[i].pt.y << "\n" << "3" << "\t" << i+15 << "\t" << inliers4[i].pt.x << "\t" << inliers4[i].pt.y;
+        ENH2 << i+15 << "\t" << "Photogrammetric" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0";
 		if(i !=n-1){
 			bonsMatches2 <<endl;
 			ENH2 <<endl;
@@ -265,10 +265,10 @@ int main(int argc, char* argv[]) {
     for (size_t i=0; i < inliers2.size(); i++){
         for(size_t c=0; c < inliers3.size(); c++){
             if (inliers2[i].pt.x == inliers3[c].pt.x && inliers2[i].pt.y == inliers3[c].pt.y) {
-			int new_i = static_cast<int>(pmatches1.size());
-            pmatches1.push_back(inliers1[i]);
-            pmatches2.push_back(inliers2[i]);
-            pmatches3.push_back(inliers3[i]);
+                int new_i = static_cast<int>(pmatches1.size());
+                pmatches1.push_back(inliers1[i]);
+                pmatches2.push_back(inliers2[i]);
+                pmatches3.push_back(inliers4[c]);
 				
 			}
 		}		

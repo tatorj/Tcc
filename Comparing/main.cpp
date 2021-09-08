@@ -108,9 +108,9 @@ int main(int argc, char* argv[])
     
     //CommandLineParser parser(argc, argv,
     //                         "{@AKAZE | kpts1_Akaze.txt | Input Akaze Matches}"
-    //                         "{@ORB | kpts1_ORB.txt | Input ORB Matches}"
-    //                         "{@SIFT | kpts1_SIFT.txt | Input SIFT Matches}"
-    //                         "{@SURF | kpts1_SURF.txt | Input SURF Matches}");
+    //                         "{@ORB   | kpts1_ORB.txt   | Input ORB Matches}"
+    //                         "{@SIFT  | kpts1_SIFT.txt  | Input SIFT Matches}"
+    //                         "{@SURF  | kpts1_SURF.txt  | Input SURF Matches}");
     
     //auto data = loadtxt<TYPE>( parser.get<String>("@AKAZE").c_str() );
     auto data = loadtxt<TYPE>( "kpts1_Akaze.txt" );

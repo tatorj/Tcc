@@ -31,10 +31,10 @@ int main(int argc, char* argv[]) {
     // Imprimimos os parâmetros fornecidos
     cout << "img1 = " << parser.get<String>("@img1") 
          << "\nimg2 = " << parser.get<String>("@img2")
-         << "\nimg3= " << parser.get<String>("@img3") 
+         << "\nimg3= " << parser.get<String>("@img3")
          << "\nnfeatures = " << parser.get<String>("@nfeatures") 
          << "\nsize = " << parser.get<String>("@size") << "\n";
-         
+    
     auto t2 = high_resolution_clock::now();
 
     // Calculando os milisegundos
@@ -51,6 +51,12 @@ int main(int argc, char* argv[]) {
     Mat img3 = imread( parser.get<String>("@img3"), IMREAD_GRAYSCALE);
     int nfeatures = parser.get<int>("@nfeatures");
     double tsize = parser.get<double>("@size");
+    if ( img1.empty() || img2.empty() || img3.empty() )
+    {
+        cout << "Could not open or find the image!\n" << endl;
+        parser.printMessage();
+        return -1;
+    }
     
     t2 = high_resolution_clock::now();
 
@@ -61,14 +67,12 @@ int main(int argc, char* argv[]) {
 		 << ms_double.count() << "ms\n";
     
     
-    // O código segue o mesmo do tutorial com ORB
+    // O código segue o mesmo do tutorial com AKAZE
     vector<KeyPoint> kpts1, kpts2, kpts3;
     Mat desc1, desc2, desc3;
     Ptr<ORB> ORB = ORB::create(nfeatures);
 
     t1 = high_resolution_clock::now();
-
-
     ORB->detect(img1, kpts1, noArray());
     ORB->detect(img2, kpts2, noArray());
     ORB->detect(img3, kpts3, noArray());
@@ -99,7 +103,7 @@ int main(int argc, char* argv[]) {
         kpoint3 << kpts3[i].pt.x << " " << kpts3[i].pt.y << endl;
     }
     
-    kpoint2.close();
+    kpoint3.close();
 /* Getting number of milliseconds as a double. */
     ms_double = t2 - t1;
 
@@ -231,38 +235,31 @@ int main(int argc, char* argv[]) {
 
     cout <<"Correlatos= "
 		 << ms_double.count() << "ms\n";
-		 
-	ofstream bonsMatches("Matches_ORB.txt");
-	ofstream ENH("ENH_ORB.txt");
+
+    //Separando os pontos correlatos que não apareceriam nas 3 imagens e portanto não seriam inseridos no 3_images
     
-    size_t n = inliers1.size();
-    for(size_t i = 0; i < inliers1.size(); i++) {
-        bonsMatches << "1" << "\t" << i+15 << "\t" << inliers1[i].pt.x << "\t" << inliers1[i].pt.y << "\n" << "2" << "\t" << i+15 << "\t" << inliers2[i].pt.x << "\t" << inliers2[i].pt.y;
-		ENH << i+15 << "\t" << "Photogrammetric" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0";
-		if(i !=n-1){
-			bonsMatches <<endl;
-			ENH <<endl;
-		}			
-    }
+    float coluna = img2.cols;
     
-    bonsMatches.close();
-    ENH.close();
-    	 
-	ofstream bonsMatches2("Matches_pt2_ORB.txt");
-	ofstream ENH2("ENH_pt2_ORB.txt");
+    vector<KeyPoint> smatches1,smatches2,smatches3,smatches4;
+    for (size_t i=0; i < inliers2.size(); i++){
+		if (inliers2[i].pt.x < coluna * 0.4){
+			int new_i = static_cast<int>(smatches1.size());
+            smatches1.push_back(inliers1[i]);
+            smatches2.push_back(inliers2[i]);	
+		}		
+	}
+	
+	
+	for (size_t i=0; i < inliers3.size(); i++){
+		if (inliers3[i].pt.x > coluna * 0.6){
+			int new_i = static_cast<int>(smatches3.size());
+            smatches3.push_back(inliers3[i]);
+            smatches4.push_back(inliers4[i]);	
+		}		
+	}
+
     
-    n = inliers3.size();
-    for(size_t i = 0; i < inliers3.size(); i++) {
-        bonsMatches2 << "2" << "\t" << i+15 << "\t" << inliers3[i].pt.x << "\t" << inliers3[i].pt.y << "\n" << "3" << "\t" << i+15 << "\t" << inliers4[i].pt.x << "\t" << inliers4[i].pt.y;
-        ENH2 << i+15 << "\t" << "Photogrammetric" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0";
-		if(i !=n-1){
-			bonsMatches2 <<endl;
-			ENH2 <<endl;
-		}			
-    }
-    
-    bonsMatches2.close();
-    ENH2.close();
+    //Comparando as listas de matches e criando a lista de 3 imagens
     
     vector<KeyPoint> pmatches1, pmatches2, pmatches3;    
     for (size_t i=0; i < inliers2.size(); i++){
@@ -271,27 +268,48 @@ int main(int argc, char* argv[]) {
                 int new_i = static_cast<int>(pmatches1.size());
                 pmatches1.push_back(inliers1[i]);
                 pmatches2.push_back(inliers2[i]);
-                pmatches3.push_back(inliers4[c]);
-				
+                pmatches3.push_back(inliers4[c]);				
 			}
 		}		
 	}
+
+	size_t n = pmatches1.size()+smatches1.size()+smatches3.size();
+    int k =15;
+	ofstream bonsMatches("3_images_Matches_ORB.txt");
+	ofstream ENH("3_images_ENH_ORB.txt");   
 	
-	ofstream bonsMatches3("3_images_Matches_ORB.txt");
-	ofstream ENH3("3_images_ENH_ORB.txt");
-    
-	n = pmatches1.size();
-    for(size_t i = 0; i < pmatches1.size(); i++) {
-        bonsMatches3 << "1" << "\t" << i+15 << "\t" << pmatches1[i].pt.x << "\t" << pmatches1[i].pt.y << "\n" << "2" << "\t" << i+15 << "\t" << pmatches2[i].pt.x << "\t" << pmatches2[i].pt.y << "\n" << "3" << "\t" << i+15 << "\t" << pmatches3[i].pt.x << "\t" << pmatches3[i].pt.y;
-		ENH3 << i+15 << "\t" << "Photogrammetric" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0";
+	for(size_t i = 0; i < smatches1.size(); i++) {
+        bonsMatches << "1" << "\t" << k << "\t" << smatches1[i].pt.x << "\t" << smatches1[i].pt.y << "\n" << "2" << "\t" << k << "\t" << smatches2[i].pt.x << "\t" << smatches2[i].pt.y;
+		ENH << k << "\t" << "Photogrammetric" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0";
+		k++;
 		if(i !=n-1){
-			bonsMatches3 <<endl;
-			ENH3 <<endl;
+			bonsMatches <<endl;
+			ENH <<endl;
+		}
+    }
+    
+    for(size_t i = 0; i < smatches3.size(); i++) {
+        bonsMatches << "2" << "\t" << k << "\t" << smatches3[i].pt.x << "\t" << smatches3[i].pt.y << "\n" << "3" << "\t" << k << "\t" << smatches4[i].pt.x << "\t" << smatches4[i].pt.y;
+        ENH << k << "\t" << "Photogrammetric" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0";
+		k++;
+		if(i !=n-1){
+			bonsMatches <<endl;
+			ENH <<endl;
+		}
+    }
+	
+    for(size_t i = 0; i < pmatches1.size(); i++) {
+        bonsMatches << "1" << "\t" << k << "\t" << pmatches1[i].pt.x << "\t" << pmatches1[i].pt.y << "\n" << "2" << "\t" << k << "\t" << pmatches2[i].pt.x << "\t" << pmatches2[i].pt.y << "\n" << "3" << "\t" << k << "\t" << pmatches3[i].pt.x << "\t" << pmatches3[i].pt.y;
+		ENH << k << "\t" << "Photogrammetric" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0" << "\t" << "0";
+		k++;
+		if(i !=n-1){
+			bonsMatches <<endl;
+			ENH <<endl;
 		}			
     }
     
-    bonsMatches3.close();
-    ENH3.close();
+    bonsMatches.close();
+    ENH.close();
 	
     
     t1 = high_resolution_clock::now();
@@ -309,16 +327,20 @@ int main(int argc, char* argv[]) {
 		 << ms_double.count() << "ms\n";
     
     
-    double inlier_ratio = inliers1.size() / (double) matched1.size();
+    double inlier_ratio1 = inliers1.size() / (double) matched1.size();
+    double inlier_ratio3 = inliers3.size() / (double) matched3.size();
     cout << "ORB Matching Results" << endl;
-    cout << "*****************************************" << endl;
-    cout << "# Keypoints 1:                          \t" << kpts1.size() << endl;
-    cout << "# Keypoints 2:                          \t" << kpts2.size() << endl;
-    cout << "# Keypoints 3:                          \t" << kpts3.size() << endl;
-    cout << "# Matches:                              \t" << matched1.size() << endl;
-    cout << "# Inliers:                              \t" << inliers1.size() << endl;
-    cout << "# Inliers Ratio:                        \t" << inlier_ratio << endl;
-    cout << "# 3 Matches:                            \t" << pmatches1.size() << endl;
+    cout << "*******************************" << endl;
+    cout << "# Keypoints 1:                        \t" << kpts1.size() << endl;
+    cout << "# Keypoints 2:                        \t" << kpts2.size() << endl;
+    cout << "# Keypoints 3:                        \t" << kpts3.size() << endl;
+    cout << "# Matches 1_2:                        \t" << matched1.size() << endl;
+    cout << "# Matches 2_3:                        \t" << matched3.size() << endl;
+    cout << "# Inliers 1_2:                        \t" << inliers1.size() << endl;
+    cout << "# Inliers 2_3:                        \t" << inliers3.size() << endl;
+    cout << "# Inliers Ratio 1_2:                  \t" << inlier_ratio1 << endl;
+    cout << "# Inliers Ratio 2_3:                  \t" << inlier_ratio3 << endl;
+    cout << "# 3 Matches:                          \t" << pmatches1.size() << endl;
     cout << endl;
     
     //imshow("result", res);

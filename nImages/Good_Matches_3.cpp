@@ -6,16 +6,17 @@
 using namespace std;
 using namespace cv;
 
-vector<vector<vector<KeyPoint>>> good_3_Matches (int n, vector<vector<vector<KeyPoint>>> inliers ) {
+vector<vector<vector<KeyPoint>>> good_3_Matches (int n, vector<vector<vector<KeyPoint>>> inliers )
+{
 	
 	vector<vector<vector<KeyPoint>>> pmatches;
 	for (size_t k=0; k < inliers[k][1].size(); k++){
 		for(size_t i=0; i < inliers[k+1][0].size(); i++){
 			if (inliers[k][1][k].pt.x == inliers[k][0][i].pt.x && inliers[k][1][k].pt.y == inliers[k][0][i].pt.y) {
 				int new_i = static_cast<int>(pmatches.size());
-				pmatches[k][0][new_i].push_back(inliers[k][0][k]);
-				pmatches[k][1][new_i].push_back(inliers[k][1][k]);
-				pmatches[k][2][new_i].push_back(inliers[k][1][i]);				
+				pmatches[k][0].push_back(inliers[k][0][k]);
+				pmatches[k][1].push_back(inliers[k][1][k]);
+				pmatches[k][2].push_back(inliers[k][1][i]);				
 			}
 		}		
 	}

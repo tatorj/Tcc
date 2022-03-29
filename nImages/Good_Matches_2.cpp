@@ -5,7 +5,8 @@
 using namespace std;
 using namespace cv;
 
-vector<vector<vector<KeyPoint>>> good_2_Matches (int n, vector<vector<vector<KeyPoint>>> inliers, vector<Mat> images) {
+vector<vector<vector<KeyPoint>>> good_2_Matches (int n, vector<vector<vector<KeyPoint>>> inliers, vector<Mat> images)
+{
 	
 	vector<vector<vector<KeyPoint>>> smatches;
 
@@ -13,30 +14,30 @@ vector<vector<vector<KeyPoint>>> good_2_Matches (int n, vector<vector<vector<Key
 	{
 		float coluna = images[k+1].cols;
 
-		for (int i = 0; i < inliers[k][1].size; ++i)
+		for (int i = 0; i < inliers[k][1].size(); ++i)
 		{
 			if (k==0)
 			{
 				if (inliers[k][1][i].pt.x < coluna * 0.4)
 				{
-					smatches[k][0][i].push_back(inliers[k][0][i]);
-					smatches[k][1][i].push_back(inliers[k][1][i]);
+					smatches[k][0].push_back(inliers[k][0][i]);
+					smatches[k][1].push_back(inliers[k][1][i]);
 				}
 			}
 			else if (k==n-1)
 			{
 				if (inliers[k][1][i].pt.x > coluna * 0.6)
 				{
-					smatches[k][0][i].push_back(inliers[k][0][i]);
-					smatches[k][1][i].push_back(inliers[k][1][i]);
+					smatches[k][0].push_back(inliers[k][0][i]);
+					smatches[k][1].push_back(inliers[k][1][i]);
 				}
 			}
 			else
 			{
 				if (inliers[k][1][i].pt.x > coluna * 0.6 && inliers[k][1][i].pt.x < coluna * 0.8)
 				{
-					smatches[k][0][i].push_back(inliers[k][0][i]);
-					smatches[k][1][i].push_back(inliers[k][1][i]);
+					smatches[k][0].push_back(inliers[k][0][i]);
+					smatches[k][1].push_back(inliers[k][1][i]);
 				}
 			}
 		}

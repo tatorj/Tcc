@@ -7,11 +7,14 @@
 using namespace std;
 using namespace cv;
 
-vector<Mat> Homography_func (int n, vector<vector<vector<KeyPoint>>> matched) {
+vector<Mat> Homography_func (int n, vector<vector<vector<KeyPoint>>> matched)
+{
 	
 	vector<Point2f> mpts1, mpts2;
+	double tsize =3;
 	vector<Mat> homography;
-	for (size_t i = 0; i < n-1; i++){
+	for (size_t i = 0; i < n-1; i++)
+	{
 		
 		KeyPoint::convert(matched[i][0],mpts1);
 		KeyPoint::convert(matched[i][1],mpts2);

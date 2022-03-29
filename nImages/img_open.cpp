@@ -38,7 +38,7 @@ vector<String> Img_Id (int n) {
 	}
 	return Img_Id;
 }
-
+/*
 int main(){
 	
 	int n;
@@ -51,3 +51,4 @@ int main(){
 	waitKey();
 	
 }
+*/

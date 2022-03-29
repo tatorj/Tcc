@@ -6,25 +6,31 @@
 using namespace std;
 using namespace cv;
 
-vector<vector<vector<KeyPoint>>> Img_BFM (int n, vector<vector<KeyPoint>> img_Det,vector<Mat> img_Comp, const float nn_match_ratio = 0.8f) {
+vector<vector<vector<KeyPoint>>> Img_BFM (int n, vector<vector<KeyPoint>> img_Det,vector<Mat> img_Comp, const float nn_match_ratio = 0.8f)
+{
 	
 	
 	BFMatcher matcher(NORM_HAMMING);
 	vector< vector<DMatch> > nn_matches;
 	vector<vector<vector<KeyPoint>>> matched;
 	
-	for (size_t k = 0; k < n-1 ; k++){
+	for (size_t k = 0; k < n-1 ; k++)
+	{
+
 		matcher.knnMatch(img_Comp[k], img_Comp[k+1], nn_matches, 2);
 		
-		for(size_t i = 0; i < nn_matches.size(); i++) {
+		for(size_t i = 0; i < nn_matches.size(); i++)
+		{
 			
 			DMatch first = nn_matches[i][0];
 			float dist1 = nn_matches[i][0].distance;
 			float dist2 = nn_matches[i][1].distance;
 			
-			if(dist1 < nn_match_ratio * dist2) {
-				matched[k][0][i].push_back(img_Det[k][first.queryIdx]);
-				matched[k][1][i].push_back(img_Det[k+1][first.trainIdx]);
+			if(dist1 < nn_match_ratio * dist2)
+			{
+				matched[k][0].push_back(img_Det[k][first.queryIdx]);
+				matched[k][1].push_back(img_Det[k+1][first.trainIdx]);
+			}
 		}
 	}
 	return matched;

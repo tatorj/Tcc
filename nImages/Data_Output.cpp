@@ -6,7 +6,8 @@
 using namespace std;
 using namespace cv;
 
-void Data_Output_Akaze (int n, int P, vector<vector<vector<KeyPoint>>> pmatches, vector<vector<vector<KeyPoint>>> smatches /*,vector<String> Img_Id*/){
+void Data_Output_Akaze (int n, int P, vector<vector<vector<KeyPoint>>> pmatches, vector<vector<vector<KeyPoint>>> smatches)
+{
 
 	P++;
 	size_t f = pmatches.size()+smatches.size();

@@ -273,8 +273,8 @@ int main(int argc, char* argv[]) {
 
 	size_t n = pmatches1.size()+smatches1.size()+smatches3.size();
     int k =15;
-	ofstream bonsMatches("3_images_Matches_SIFT.txt");
-	ofstream ENH("3_images_ENH_SIFT.txt");   
+	ofstream bonsMatches("3_images_Matches_AKAZE.txt");
+	ofstream ENH("3_images_ENH_AKAZE.txt");   
 	
 	for(size_t i = 0; i < smatches1.size(); i++) {
         bonsMatches << "1" << "\t" << k << "\t" << smatches1[i].pt.x << "\t" << smatches1[i].pt.y << "\n" << "2" << "\t" << k << "\t" << smatches2[i].pt.x << "\t" << smatches2[i].pt.y;
@@ -309,7 +309,7 @@ int main(int argc, char* argv[]) {
     bonsMatches.close();
     ENH.close();
 	
-    
+    /*
     t1 = high_resolution_clock::now();
     
     Mat res;
@@ -324,7 +324,7 @@ int main(int argc, char* argv[]) {
     cout <<"Draw matches= "
 		 << ms_double.count() << "ms\n";
     
-    
+    */
     double inlier_ratio1 = inliers1.size() / (double) matched1.size();
     double inlier_ratio3 = inliers3.size() / (double) matched3.size();
     cout << "AKAZE Matching Results" << endl;

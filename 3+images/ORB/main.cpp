@@ -274,7 +274,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	size_t n = pmatches1.size()+smatches1.size()+smatches3.size();
-    int k =15;
+    int k =14;
 	ofstream bonsMatches("3_images_Matches_ORB.txt");
 	ofstream ENH("3_images_ENH_ORB.txt");   
 	
@@ -311,7 +311,7 @@ int main(int argc, char* argv[]) {
     bonsMatches.close();
     ENH.close();
 	
-    
+    /*
     t1 = high_resolution_clock::now();
     
     Mat res;
@@ -325,7 +325,7 @@ int main(int argc, char* argv[]) {
 
     cout <<"Draw matches= "
 		 << ms_double.count() << "ms\n";
-    
+    */
     
     double inlier_ratio1 = inliers1.size() / (double) matched1.size();
     double inlier_ratio3 = inliers3.size() / (double) matched3.size();

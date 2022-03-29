@@ -6,7 +6,7 @@
 using namespace std;
 using namespace cv;
 
-vector<vector<vector<KeyPoint>>> "3_good_Matches" (int n, vector<vector<vector<KeyPoint>>> inliers ) {
+vector<vector<vector<KeyPoint>>> good_3_Matches (int n, vector<vector<vector<KeyPoint>>> inliers ) {
 	
 	vector<vector<vector<KeyPoint>>> pmatches;
 	for (size_t k=0; k < inliers[k][1].size(); k++){
@@ -20,7 +20,7 @@ vector<vector<vector<KeyPoint>>> "3_good_Matches" (int n, vector<vector<vector<K
 		}		
 	}
 
-	return ;
+	return pmatches;
 }
 
 /*

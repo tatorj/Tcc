@@ -23,6 +23,22 @@ vector<Mat> Img_Open (int n) {
 	return images;
 }
 
+vector<String> Img_Id (int n) {
+	
+	String Id;
+	vector<String> Img_Id;
+
+	for (size_t i = 0; i < n; i++){
+		
+		cout << "\n Insira o Id da Imagem: ";
+		cin >> Id;
+		
+		Img_Id.push_back(Id);
+	    
+	}
+	return Img_Id;
+}
+
 int main(){
 	
 	int n;

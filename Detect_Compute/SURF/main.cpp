@@ -23,7 +23,7 @@ const float nn_match_ratio = 0.8f;   // Nearest neighbor matching ratio
 
 int main(int argc, char* argv[]) {
 
-	ofstream time_mem("Time_Mem_SURF_17-18.txt");
+        ofstream time_mem("Time_Mem_SURF_17-18.txt");
 
 
 	// Iniciação do calculo de tempo
@@ -36,8 +36,8 @@ int main(int argc, char* argv[]) {
 
 	// O parâmetro de homografia foi substituído por um limiar
 	CommandLineParser parser(argc, argv,
-				"{@img1 | /home/luiz/Imagens/17.bmp | input image 1}"
-				"{@img2 | /home/luiz/Imagens/18.bmp | input image 2}"
+                                "{@img1 | /home/luiz/Imagens/17.bmp | input image 1}"
+                                "{@img2 | /home/luiz/Imagens/18.bmp | input image 2}"
 				"{@minH | 400	| input threshold size}"
 				"{@size | 3	  | input threshold size}");
 
@@ -83,12 +83,12 @@ int main(int argc, char* argv[]) {
 	// Calculando o tempo em ms
 	ms_double = t2 - t1;
 
-	time_mem <<"Tempo de leitura do segundo arquivo= "<< ms_double.count() << "ms\n" <<\n";
+        time_mem <<"Tempo de leitura do segundo arquivo= "<< ms_double.count() << "ms\n" <<"\n";
 
 	// O código segue o mesmo do tutorial
 	vector<KeyPoint> kpts1, kpts2;
 	Mat desc1, desc2;
-	Ptr<SURF> SURF = SURF::create( minH );
+        Ptr<SURF> SURF = SURF::create();
 
 	t1 = high_resolution_clock::now();
 
@@ -106,7 +106,7 @@ int main(int argc, char* argv[]) {
 	t2 = high_resolution_clock::now();
 
 	//Escrevendo os pontos detectados
-
+/*
 	ofstream kpoint1("kpts2_SURF.txt");
 
 	for(size_t i = 0; i < kpts1.size(); i++) {
@@ -122,7 +122,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	kpoint2.close();
-
+*/
 	// Calculando o tempo em ms
 	ms_double = t2 - t1;
 
@@ -220,8 +220,8 @@ int main(int argc, char* argv[]) {
 	time_mem <<"Correlatos= "
 		 << ms_double.count() << "ms\n" <<"Tempo Total homografia= " << TempTotHom.count() << "\n";
 
-	ofstream bonsMatches("Matches_SURF_17-18.txt");
-	ofstream ENH("ENH_SURF_17-18.txt");
+        ofstream bonsMatches("Matches_SURF_17-18.txt");
+        ofstream ENH("ENH_SURF_17-18.txt");
 
 	size_t n = inliers1.size();
 	for(size_t i = 0; i < inliers1.size(); i++) {
@@ -241,7 +241,7 @@ int main(int argc, char* argv[]) {
 
 	Mat res;
 	drawMatches(img1, inliers1, img2, inliers2, good_matches, res);
-	imwrite("SURF_result_17-18.png", res);
+        imwrite("SURF_result_17-18.png", res);
 
 	t2 = high_resolution_clock::now();
 

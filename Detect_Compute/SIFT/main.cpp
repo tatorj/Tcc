@@ -2,7 +2,7 @@
 #include <opencv2/calib3d.hpp>  // <- declaramos findHomography
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
-#include "opencv2/xfeatures2d.hpp"
+//#include "opencv2/xfeatures2d.hpp" Como estamos na versão 4.5.4 não é necessário o uso desta biblioteca
 #include <iostream>
 #include <chrono>
 #include <fstream>
@@ -14,7 +14,6 @@
 
 using namespace std;
 using namespace cv;
-using namespace cv::xfeatures2d;
 using std::cout;
 using std::endl;
 const float inlier_threshold = 2.5f; // Distance threshold to identify inliers with homography check
@@ -23,7 +22,7 @@ const float nn_match_ratio = 0.8f;   // Nearest neighbor matching ratio
 
 int main(int argc, char* argv[]) {
 
-	ofstream time_mem("Time_Mem_SIFT_17-18.txt");
+        ofstream time_mem("Time_Mem_SIFT_17-18.txt");
 
 
 	// Iniciação do calculo de tempo
@@ -36,8 +35,8 @@ int main(int argc, char* argv[]) {
 
 	// O parâmetro de homografia foi substituído por um limiar
 	CommandLineParser parser(argc, argv,
-				"{@img1 | /home/luiz/Imagens/17.bmp | input image 1}"
-				"{@img2 | /home/luiz/Imagens/18.bmp | input image 2}"
+                                "{@img1 | /home/luiz/Imagens/17.bmp | input image 1}"
+                                "{@img2 | /home/luiz/Imagens/18.bmp | input image 2}"
 				"{@size | 3	  | input threshold size}");
 
 	// Imprimimos os parâmetros fornecidos
@@ -80,7 +79,7 @@ int main(int argc, char* argv[]) {
 	// Calculando o tempo em ms
 	ms_double = t2 - t1;
 
-	time_mem <<"Tempo de leitura do segundo arquivo= "<< ms_double.count() << "ms\n" <<\n";
+        time_mem <<"Tempo de leitura do segundo arquivo= "<< ms_double.count() << "ms\n" <<"\n";
 
 	// O código segue o mesmo do tutorial
 	vector<KeyPoint> kpts1, kpts2;
@@ -103,7 +102,7 @@ int main(int argc, char* argv[]) {
 	t2 = high_resolution_clock::now();
 
 	//Escrevendo os pontos detectados
-
+/*
 	ofstream kpoint1("kpts2_SIFT.txt");
 
 	for(size_t i = 0; i < kpts1.size(); i++) {
@@ -119,7 +118,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	kpoint2.close();
-
+*/
 	// Calculando o tempo em ms
 	ms_double = t2 - t1;
 
@@ -217,8 +216,8 @@ int main(int argc, char* argv[]) {
 	time_mem <<"Correlatos= "
 		 << ms_double.count() << "ms\n" <<"Tempo Total homografia= " << TempTotHom.count() << "\n";
 
-	ofstream bonsMatches("Matches_SIFT_17-18.txt");
-	ofstream ENH("ENH_SIFT_17-18.txt");
+        ofstream bonsMatches("Matches_SIFT_17-18.txt");
+        ofstream ENH("ENH_SIFT_17-18.txt");
 
 	size_t n = inliers1.size();
 	for(size_t i = 0; i < inliers1.size(); i++) {
@@ -238,7 +237,7 @@ int main(int argc, char* argv[]) {
 
 	Mat res;
 	drawMatches(img1, inliers1, img2, inliers2, good_matches, res);
-	imwrite("SIFT_result_17-18.png", res);
+        imwrite("SIFT_result_17-18.png", res);
 
 	t2 = high_resolution_clock::now();
 

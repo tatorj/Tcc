@@ -19,7 +19,7 @@ const float nn_match_ratio = 0.8f;   // Nearest neighbor matching ratio
 
 int main(int argc, char* argv[]) {
 
-		ofstream time_mem("Time_Mem_ORB_17-18.txt");
+                ofstream time_mem("Time_Mem_ORB_17-18.txt");
 
 
 	// Iniciação do calculo de tempo
@@ -32,8 +32,8 @@ int main(int argc, char* argv[]) {
 
 	// O parâmetro de homografia foi substituído por um limiar
 	CommandLineParser parser(argc, argv,
-				"{@img1 | /home/luiz/Imagens/17.bmp | input image 1}"
-				"{@img2 | /home/luiz/Imagens/18.bmp | input image 2}"
+                                "{@img1 | /home/luiz/Imagens/17.bmp | input image 1}"
+                                "{@img2 | /home/luiz/Imagens/18.bmp | input image 2}"
 				"{@nfeatures | 100000 | input number of features}"
 				"{@size | 3	  | input threshold size}");
 
@@ -79,7 +79,7 @@ int main(int argc, char* argv[]) {
 	// Calculando o tempo em ms
 	ms_double = t2 - t1;
 
-	time_mem <<"Tempo de leitura do segundo arquivo= "<< ms_double.count() << "ms\n" <<\n";
+        time_mem <<"Tempo de leitura do segundo arquivo= "<< ms_double.count() << "ms\n" <<"\n";
 
 	// O código segue o mesmo do tutorial
 	vector<KeyPoint> kpts1, kpts2;
@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
 	ORB->detect(img2, kpts2, noArray());
 
 	t2 = high_resolution_clock::now();
-
+/*
 	//Escrevendo os pontos detectados
 
 	ofstream kpoint1("kpts2_ORB.txt");
@@ -118,7 +118,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	kpoint2.close();
-
+*/
 	// Calculando o tempo em ms
 	ms_double = t2 - t1;
 
@@ -183,8 +183,7 @@ int main(int argc, char* argv[]) {
 	// Calculando o tempo em ms
 	ms_double = t2 - t1;
 
-	time_mem <<"Homography Matrix compute= "
-		 << ms_double.count() << "ms\n";
+        time_mem <<"Homography Matrix compute= " << ms_double.count() << "ms\n";
 
 	t1 = high_resolution_clock::now();
 
@@ -216,8 +215,8 @@ int main(int argc, char* argv[]) {
 	time_mem <<"Correlatos= "
 		 << ms_double.count() << "ms\n" <<"Tempo Total homografia= " << TempTotHom.count() << "\n";
 
-	ofstream bonsMatches("Matches_ORB_17-18.txt");
-	ofstream ENH("ENH_ORB_17-18.txt");
+        ofstream bonsMatches("Matches_ORB_17-18.txt");
+        ofstream ENH("ENH_ORB_17-18.txt");
 
 	size_t n = inliers1.size();
 	for(size_t i = 0; i < inliers1.size(); i++) {
@@ -237,7 +236,7 @@ int main(int argc, char* argv[]) {
 
 	Mat res;
 	drawMatches(img1, inliers1, img2, inliers2, good_matches, res);
-	imwrite("ORB_result_17-18.png", res);
+        imwrite("ORB_result_17-18.png", res);
 
 	t2 = high_resolution_clock::now();
 
@@ -250,11 +249,11 @@ int main(int argc, char* argv[]) {
 	double inlier_ratio = inliers1.size() / (double) matched1.size();
 	time_mem << "ORB Matching Results" << endl;
 	time_mem << "*******************************" << endl;
-	time_mem << "# Keypoints 1:									\t" << kpts1.size() << endl;
-	time_mem << "# Keypoints 2:									\t" << kpts2.size() << endl;
-	time_mem << "# Matches:											\t" << matched1.size() << endl;
-	time_mem << "# Inliers:											\t" << inliers1.size() << endl;
-	time_mem << "# Inliers Ratio:					  		\t" << inlier_ratio << endl;
+        time_mem << "# Keypoints 1:				\t" << kpts1.size() << endl;
+        time_mem << "# Keypoints 2:				\t" << kpts2.size() << endl;
+        time_mem << "# Matches:					\t" << matched1.size() << endl;
+        time_mem << "# Inliers:					\t" << inliers1.size() << endl;
+        time_mem << "# Inliers Ratio:				\t" << inlier_ratio << endl;
 	time_mem << endl;
 
 	time_mem.close();

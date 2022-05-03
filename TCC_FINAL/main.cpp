@@ -14,8 +14,9 @@
 /* Notes on the adoption of STL containers in this project:
  * We prefer to use vectors, but this project requires at least one list, as
  * this structure guarantees that the iterators (or even simple pointers) will
- * not be invalidated when a new element is added or even removed. A map was
- * also used to ensure a quick search for measurements taken on images.
+ * not be invalidated when a new element is added or even removed. Maps were
+ * also used to ensure a quick search for measurements taken on images and
+ * images by index.
  */
 
 
@@ -52,6 +53,9 @@
 #define GET_VECTOR_USAGE(vec) ({\
     vec.size() * sizeof(vec.front()); })
 
+#define GET_2DVECTOR_USAGE(vec) ({\
+    vec.size() * vec.front().size() * sizeof(vec.front().front()); })
+
 #define GET_CVMAT_USAGE(mat) ({\
     (mat.cols*mat.rows) * sizeof(mat.type()); })
 
@@ -66,31 +70,6 @@
     std::string result = std::to_string(dblBytes);\
     result.substr(0, result.size()-4) + " " + suffix[i]; })
 
-
-// Textos para a monografia:
-
-// A ligação entre as classe imagem e ponto faz-se importante em dois momentos e
-// nos dois sentidos, sendo caracterizada a ligação com o ponto, isto é, partindo
-// da imagem, como prioritária. Isto se justifica pelo algoritmo de integração de
-// dos pontos de costura de pares distintos. Nos casos onde uma imagem participa
-// de diversos pares é necessária a busca na imagem por pontos a fim de determinar
-// se estes já foram registrados durante o processamento de outros pares com a
-// mesma imagem. Ao seu tempo, a ligação com a imagem, partindo do ponto, faz-se
-// necessária em termos de entrega do produto final, na qual cada medida do ponto
-// em distintas imagens deve ser corretamente associada. A associação das medidas
-// de cada ponto podem então ser atendidas com uma simples cópia do índice da
-// imagem sem que isso implique em perda de performance.
-
-// Para a busca na imagem por ponto adotou-se a estrutura de dados map, da
-// biblioteca padrão de C++, pois esta possui tempo de acesso reduzido aplicando
-// internamente o algoritmo de busca binária. Outras alternativas seriam adotar
-// uma KD-tree (árvore de K dimensões), com tempo de acesso equivalente ao map,
-// ou um algoritmo de hash (como implementado em unordered_map) com tempo de
-// resposta menor, mas possivelmente com elevado custo de armazenamento.
-// Ajustes necessários para uso da classe map com os pontos do opencv foram
-// indicados em https://stackoverflow.com/questions/26483306/stdmap-with-cvpoint-as-key.
-
-// PS.: Justificar na monografia a escolha de RANSAC entre as demais opções (LSM, RHO e LMEDS)
 
 
 // Classes definition
@@ -143,11 +122,13 @@ namespace lo {
             size_t m_read, m_detect, m_descript;
 
 			// Constructor
-			Image(size_t idx, std::string path = "") : index(idx), filename(path)
+			Image(size_t idx = 0, std::string path = "") : index(idx), filename(path)
 				{}
 
 			// Methods
 			bool computeAndDetect(const cv::Ptr<cv::Feature2D> &detector, bool verbose = false);
+			Image& operator =(const Image &obj)
+				{this->index = obj.index; this->filename = obj.filename; return *this;}
 	};
 
 	class Pair {
@@ -159,34 +140,40 @@ namespace lo {
             Image *left, *right;
             bool discarded;
             std::chrono::duration<double, std::milli> t_match, t_correct;
-            size_t m_match;
+            size_t m_match, m_correct;
 
             // Constructor
             Pair(Image *left = nullptr, Image *right = nullptr)
-                { this->left = left; this->right = right; discarded = true;}
+                { this->left = left; this->right = right;
+                  discarded = true; m_match = m_correct = 0; }
 
             // Methods
-            bool checkHomography(const cv::Ptr<cv::DescriptorMatcher> &matcher, double maximumError = 2.0, bool verbose = false);
+            bool checkHomography(const cv::Ptr<cv::DescriptorMatcher> &matcher, double maximumError = 2.0, bool crosscheck = false, bool verbose = false);
 	};
 
 	class ProcessController {
             // Command Line arguments
             bool verbose;
+            bool crosscheck;
+            double residue;
             size_t startPointIndex;
             std::string detectorType;
+            std::string imagelist, pairslist, resultname, pointsname;
 
-            // Our measurement selection method
+            // Internal method
             void makePointList(bool verbose = false);
         public:
             // Attributes
             std::list< Point > points;
-            std::vector< Image > images;
+            std::map< size_t, Image > images;
             std::vector< Pair > pairs;
             cv::Ptr<cv::Feature2D> detector;
             cv::Ptr<cv::DescriptorMatcher> matcher;
             cv::Ptr<cv::CommandLineParser> parser;
+            std::chrono::duration<double, std::milli> t_stich;
+            size_t m_stich, stich_creation, stich_update, stich_merge;
 
-            // Methods
+            // Public methods
             bool readArguments(int argc, char **argv);
             bool runProcesses();
             bool saveResults();
@@ -212,6 +199,14 @@ int main (int argc, char** argv) {
 
 // Method's implementation
 namespace lo {
+
+    static inline std::string &ltrim(std::string &s) {
+        // Left trim string to avoid some errors on read files
+        // from https://stackoverflow.com/questions/216823/how-to-trim-a-stdstring
+        s.erase(s.begin(), std::find_if(s.begin(), s.end(),
+                std::not1(std::ptr_fun<int, int>(std::isspace))));
+        return s;
+    }
 
     bool Point::add(const Measure &measure) {
         // Prevents different measurements of the same point for an image
@@ -250,23 +245,33 @@ namespace lo {
 		return true;
 	}
 
-    bool Pair::checkHomography(const cv::Ptr<cv::DescriptorMatcher> &matcher, double me, bool verbose) {
-        // TODO: computar tamanho das estruturas de correlação
+    bool Pair::checkHomography(const cv::Ptr<cv::DescriptorMatcher> &matcher, double me, bool crosscheck, bool verbose) {
         // Running the images matching
         std::vector< std::vector< cv::DMatch > > allMatches;
-        t_match = GET_P_TIME(matcher->knnMatch(left->descriptors, right->descriptors, allMatches, 2));
-
-        // Eliminate matches based on the proportion of nearest neighbor
-        // distance as an alternative to cross-correlation as described in:
-        // www.uio.no/studier/emner/matnat/its/TEK5030/v19/lect/lecture_4_2_feature_matching.pdf
         std::vector< cv::DMatch > goodMatches;
-        for(size_t i = 0; i < allMatches.size(); i++) {
-            cv::DMatch first = allMatches[i][0];
-            float dist1 = allMatches[i][0].distance;
-            float dist2 = allMatches[i][1].distance;
-            // TODO: O threshold de boa separação (0.8 para o SIFT) deveria ser ajustado junto com o algoritmo de detecção adotado ou definido pelo usuário
-            if(dist1 < 0.8 * dist2)
-                goodMatches.push_back(first);
+        if (crosscheck) {
+            t_match = GET_P_TIME(matcher->knnMatch(left->descriptors, right->descriptors, allMatches,1));
+            for(size_t i = 0; i < allMatches.size(); i++) {
+                cv::DMatch first = allMatches[i][0];
+                if(first.distance != 0 || (first.queryIdx > 0 && first.queryIdx < (int)left->keypoints.size()))
+                    goodMatches.push_back(first);
+            }
+        }
+        else {
+            t_match = GET_P_TIME(matcher->knnMatch(left->descriptors, right->descriptors, allMatches, 2));
+
+            // Eliminate matches based on the proportion of nearest neighbor
+            // distance as an alternative to cross-correlation as described in:
+            // www.uio.no/studier/emner/matnat/its/TEK5030/v19/lect/lecture_4_2_feature_matching.pdf
+            for(size_t i = 0; i < allMatches.size(); i++) {
+                if (allMatches[i].size() == 2) {
+                    cv::DMatch first = allMatches[i][0];
+                    float dist1 = allMatches[i][0].distance;
+                    float dist2 = allMatches[i][1].distance;
+                    if(dist1 < 0.8 * dist2)
+                        goodMatches.push_back(first);
+                }
+            }
         }
 
         // Find the homography
@@ -278,7 +283,6 @@ namespace lo {
             f_pts.push_back( left->keypoints[ pair.first ].pt );
             s_pts.push_back( right->keypoints[ pair.second ].pt );
         }
-        // TODO: O erro de reprojeção máximo (me) poderia estar entre os argumentos definidos pelo usuário
         t_correct = GET_F_TIME(homography, cv::findHomography(f_pts, s_pts, cv::RANSAC, me, inliers));
 
 		// Discard the pair if there is no geometric solution
@@ -316,10 +320,17 @@ namespace lo {
         // Obtain the square root of residuals by the number of solution points
         RMSE = sqrt(RMSE/N);
 
+        // Compute memory usage to main pair objects
+        m_match = GET_2DVECTOR_USAGE( allMatches );
+        m_correct = GET_VECTOR_USAGE( matches );
+
         // Reports the pair's matches count when prompted
         if (verbose) {
             std::cout << "Pair " << left->index << "x" << right->index << " processing...\n";
-            std::cout << "Total matches: " << allMatches.size() << "\n";
+            if (crosscheck)
+                std::cout << "Total distance matches available: " << left->descriptors.rows * right->descriptors.rows << "\n";
+            else
+                std::cout << "Total distance matches available: " << 2 * allMatches.size() << "\n";
             std::cout << "Good ratio matches: " << goodMatches.size() << "\n";
             std::cout << "Inlier matches: " << N << "\n";
             std::cout << "The homography matrix is:\n" << homography << "\n";
@@ -330,14 +341,29 @@ namespace lo {
 
     bool ProcessController::readArguments(int argc, char **argv) {
         const std::string keys =
-              "{detector d|AKAZE|select detector type between AKAZE, ORB, SIFT or SURF}"
-              "{sindex   s|1    |start index to new stich points}"
-              "{verbose  v|false|show all internal process messages}"
-              "{help     h|false|show help message}";
-        parser = new cv::CommandLineParser(argc, argv, keys);
+              "{@imagelist |<none>|list with index and path for images to process}"
+              "{@pairslist |<none>|list with index of images in pairs to process}"
+              "{@resultname|<none>|filename to save the resulting image measurements process}"
+              "{@pointsname|      |filename to save point's indexes and types as needed by e-foto}"
+              "{detector  d|AKAZE |select detector type between AKAZE, ORB, SIFT or SURF}"
+              "{mode      m|FILE  |select mode of pair aquisition between SEQUENCE, ALL or FILE guided}" // TODO: tratar estes modos
+              "{sindex    s|1     |start index to new stich points}"
+              "{residue   r|2.0   |define maximum residue for geometric solution}"
+              "{ccheck    c|      |use crosscheck with brute force matcher (default is use flann with Lowe's ratio test)}"
+              "{verbose   v|      |show all internal process messages}"
+              "{help      h|      |show help message}";
+        parser = cv::makePtr<cv::CommandLineParser>(argc, argv, keys);
 
-        if ( parser->has("help") && parser->get<bool>("help"))
+        if ( parser->has("help") )
             return false;
+
+        verbose = parser->has("verbose");
+        crosscheck = parser->has("ccheck");
+
+        imagelist = parser->get<std::string>("@imagelist");
+        pairslist = parser->get<std::string>("@pairslist");
+        resultname = parser->get<std::string>("@resultname");
+        pointsname = parser->get<std::string>("@pointsname");
 
         // TODO: definir mais argumentos e programar a decodificação destes.
         // Exemplos incluem:
@@ -349,43 +375,214 @@ namespace lo {
         // - listar apenas os pares (e homografias destes)
         // - processar todos os pares possíveis (ignorar entrada de pares)
         // - processar pares em sequencia (ignorar entrada de pares)
-        startPointIndex = parser->get<size_t>("sindex");
-        verbose = parser->get<bool>("verbose");
+        // - Usar máscara binária (gruber) ao detectar pontos chave
+        // - Limitar número de pontos chaves (especialmente útil para o orb)
         detectorType = parser->get<std::string>("detector");
+        startPointIndex = parser->get<size_t>("sindex");
+        residue = parser->get<double>("residue");
         if (!parser->check())
         {
             parser->printErrors();
             return false;
         }
 
-        // TODO: Revisar os detectorTypes SIFT e SURF.
+        // Avoiding use SURF algorithm when nonfree definition is not available.
 #ifndef NONFREEAVAILABLE
         if (detectorType == "SURF") {
             std::cerr << "This detector requires availability of nonfree opencv!\n";
             return false;
         }
 #endif
+
         if (detectorType == "AKAZE") {
             detector = cv::AKAZE::create();
-            matcher = new cv::BFMatcher(cv::NORM_HAMMING);
         }
         else if (detectorType == "ORB") {
-            detector = cv::ORB::create();
-            matcher = new cv::BFMatcher(cv::NORM_HAMMING);
+            detector = cv::ORB::create(100000);
         }
-        // else if (detectorType == "SIFT") {
-        //     detector = cv::SIFT::create();
-        //     matcher = new cv::BFMatcher(cv::NORM_HAMMING);
-        // }
-        // else if (detectorType == "SURF") {
-        //     detector = cv::SURF::create();
-        //     matcher = new cv::BFMatcher(cv::NORM_HAMMING);
-        // }
+        else if (detectorType == "SIFT") {
+            detector = cv::SIFT::create();
+        }
+        else if (detectorType == "SURF") {
+            detector = cv::xfeatures2d::SURF::create();
+        }
         else {
             std::cerr << "Unexpected detector type!\n";
         }
 
+        if (crosscheck) {
+            if (detectorType == "AKAZE" || detectorType == "ORB")
+                matcher = cv::makePtr<cv::BFMatcher>(cv::NORM_HAMMING, crosscheck);
+            else
+                matcher = cv::makePtr<cv::BFMatcher>(cv::NORM_L2, crosscheck);
+        }
+        else {
+            // TODO: Determinar melhor os parametros mais adequados para o LSH
+            if (detectorType == "AKAZE" || detectorType == "ORB")
+                matcher = cv::makePtr<cv::FlannBasedMatcher>( cv::makePtr<cv::flann::LshIndexParams>(3,20,2) );
+            else
+                matcher = cv::makePtr<cv::FlannBasedMatcher>( );
+        }
+        detector->descriptorType();
+
+        // Set the initial state on counters
+        stich_creation = stich_update = stich_merge = 0;
         return true;
+    }
+
+    bool ProcessController::runProcesses() {
+        // Try to read address list from images and instantiate related objects
+        std::ifstream inputImages(imagelist);
+        if (inputImages.is_open()) {
+            size_t index;
+            std::string filename;
+            while (inputImages >> index) {
+                if (images.find(index) == images.end()) {
+                    std::getline(inputImages,filename);
+                    images[index] = Image(index, ltrim(filename));
+                }
+                // Avoid index colision
+                else {
+                    std::cerr << "There are repeated image indexes in the list!\n";
+                    inputImages.close();
+                    return false;
+                }
+            }
+        }
+        else {
+            std::cerr << "Failed to open file: " << imagelist << std::endl;
+            return false;
+        }
+        // Try to read pairs list from images and instantiate related objects
+        std::ifstream inputPairs(pairslist);
+        if (inputPairs.is_open()) {
+            size_t first, second;
+            while (inputPairs >> first >> second) {
+                auto left = images.find(first), right = images.find(second);
+                if (left != images.end() && right != images.end())
+                    pairs.push_back( Pair(&left->second, &right->second) );
+                // Avoid loose index
+                else {
+                    std::cerr << "There are loosed image index on the list!\n";
+                    inputImages.close();
+                    return false;
+                }
+            }
+        }
+        else {
+            std::cerr << "Failed to open file: " << pairslist << std::endl;
+            return false;
+        }
+
+        // Image processing may abort if any image cannot be opened
+        for (auto &indexed_image: images) {
+            if (!indexed_image.second.computeAndDetect( this->detector, verbose ))
+                return false;
+        }
+
+        // Pair processing does not abort execution, but pairs can be discarded
+        for (size_t i = 0; i < pairs.size(); i++)
+            pairs[i].checkHomography( this->matcher, residue, crosscheck, verbose );
+
+        // Make the measurement selection process
+        t_stich = GET_P_TIME(makePointList(verbose));
+
+        // Report main parts time consumption when prompted
+        if (verbose) {
+            // Make zero allocated durations
+            std::chrono::duration<double, std::milli> read, detect, descript, match, correct;
+            read = detect = descript = match = correct = std::chrono::duration<double, std::milli>::zero();
+            size_t m_read = 0, m_detect = 0, m_descript = 0, m_match = 0, m_correct = 0;
+            // Sum ellapsed time
+            for (auto &indexed_image: images) {
+                auto image = indexed_image.second;
+                read += image.t_read;
+                detect += image.t_detect;
+                descript += image.t_descript;
+                m_read += image.m_read;
+                m_detect += image.m_detect;
+                m_descript += image.m_descript;
+            }
+            for (size_t i = 0; i < pairs.size(); i++) {
+                match += pairs[i].t_match;
+                correct += pairs[i].t_correct;
+                m_match += pairs[i].m_match;
+                m_correct += pairs[i].m_correct;
+            }
+            // And report it
+            std::cout << "Total time reading images: " << read.count() << "\n";
+            std::cout << "Total time on keypoints detection: " << detect.count() << "\n";
+            std::cout << "Total time on keypoints description: " << descript.count() << "\n";
+            std::cout << "Total time on matching keypoints: " << match.count() << "\n";
+            std::cout << "Total time on geometry verification: " << correct.count() << "\n";
+            std::cout << "Total time on stich point registration: " << t_stich.count() << "\n";
+
+            std::cout << "Total of stiches created: " << stich_creation << "\n";
+            std::cout << "Total of stiches updated: " << stich_update << "\n";
+            std::cout << "Total of stiches merged: "  << stich_merge << "\n";
+
+            std::cout << "Total memory usage on reading images: " << HUMAN_READABLE(m_read) << "\n";
+            std::cout << "Total memory usage on keypoints detection: " << HUMAN_READABLE(m_detect) << "\n";
+            std::cout << "Total memory usage on keypoints description: " << HUMAN_READABLE(m_descript) << "\n";
+            std::cout << "Total memory usage on correlate descriptors: " << HUMAN_READABLE(m_match) << "\n";
+            std::cout << "Total memory usage on remaining matches: " << HUMAN_READABLE(m_correct) << "\n";
+            std::cout << "Total memory usage on stich point registration: " << HUMAN_READABLE(m_stich) << "\n";
+        }
+        return true;
+    }
+
+    bool ProcessController::saveResults() {
+        // Save the main results, all digital images measurements
+        std::ofstream imageMeasures(resultname);
+        if (imageMeasures.is_open()) {
+            for (auto point = points.begin(); point != points.end(); point++)
+            {
+                if (point->index != 0)
+                {
+                    if (point != points.begin())
+                        imageMeasures << std::endl;
+                    size_t n = point->measures.size();
+                    for (size_t i = 0; i < n; i++)
+                        imageMeasures << point->measures[i].index << "\t"
+                                      << point->index << "\t"
+                                      << point->measures[i].pt.x << "\t"
+                                      << point->measures[i].pt.y << ((i == n-1)?"":"\n");
+                }
+            }
+            imageMeasures.close();
+        }
+        else {
+            std::cerr << "Failed to create file: " << resultname << std::endl;
+            return false;
+        }
+        // And e-foto's ENH points, if is needed
+        if (!pointsname.empty()) {
+            std::ofstream pointENH(pointsname);
+            if (pointENH.is_open()) {
+                for (auto point = points.begin(); point != points.end(); point++)
+                {
+                    if (point->index != 0)
+                    {
+                        if (point != points.begin())
+                            pointENH << std::endl;
+                        pointENH << point->index << "\t" << "Photogrammetric" << "\t"
+                                 << "0" << "\t" << "0" << "\t" << "0" << "\t"
+                                 << "0" << "\t" << "0" << "\t" << "0";
+                    }
+                }
+                pointENH.close();
+            }
+            else {
+                std::cerr << "Failed to create file: " << pointsname << std::endl;
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    void ProcessController::printUsage() {
+        parser->printMessage();
     }
 
     void ProcessController::makePointList(bool verbose) {
@@ -413,6 +610,7 @@ namespace lo {
                 // based on the state of existence of measurements in the images
                 if (f_isnew && s_isnew) {
                     // Generate and store point
+                    stich_creation++;
                     Point stich;
                     points.push_back(stich);
                     // Add measurements
@@ -426,6 +624,7 @@ namespace lo {
                 }
                 else if (f_isnew) {
                     // Update point to add the first image measurement
+                    stich_update++;
                     Point* stich = s_pt_id->second;
                     Measure measure(f_image->index, f_point);
                     stich->add(measure);
@@ -434,6 +633,7 @@ namespace lo {
                 }
                 else if (s_isnew) {
                     // Update point to add the second image measurement
+                    stich_update++;
                     Point* stich = f_pt_id->second;
                     Measure measure(s_image->index, s_point);
                     stich->add(measure);
@@ -443,6 +643,7 @@ namespace lo {
                 else {
                     // Copy all measurements from the second point to the first
                     // and update the images that pointed to the second point
+                    stich_merge++;
                     Point* f_stich = f_pt_id->second;
                     Point* s_stich = s_pt_id->second;
                     for (size_t k = 0; k < s_stich->measures.size(); k++)
@@ -457,136 +658,19 @@ namespace lo {
             }
         }
         // Apply indexes to points
-        size_t stichesCount = 0;
+        size_t stichesCount = m_stich = 0;
         for (auto point = points.begin(); point != points.end(); point++) {
             // Avoiding points without measurements
             if (point->measures.size() > 0) {
                 point->index = startPointIndex + stichesCount++;
+                // And computing memory usage to main stich point objects
+                m_stich += sizeof(point->index) + point->measures.size() * sizeof(Measure);
             }
         }
         // Reports the stich point's count when prompted
         if (verbose) {
             std::cout << "Total stich points: " << stichesCount << "\n";
         }
-    }
-
-    bool ProcessController::runProcesses() {
-        // TODO: Revisar o fluxo de atividades, inserir medições, se necessário
-        // e gerenciar falhas.
-
-        // TODO: Ler arquivo de controle e instanciar imagens e pares
-
-        // TEST-START
-            Image i16(1,"../images/16.bmp");
-            Image i17(2,"../images/17.bmp");
-            Image i18(3,"../images/18.bmp");
-            images.push_back(i16);
-            images.push_back(i17);
-            images.push_back(i18);
-            Pair p1617(&images[0], &images[1]);
-            Pair p1718(&images[1], &images[2]);
-            pairs.push_back(p1617);
-            pairs.push_back(p1718);
-        // TEST-END
-
-        // Image processing may abort if any image cannot be opened
-        for (size_t i = 0; i < images.size(); i++)
-            if (!images[i].computeAndDetect( this->detector, verbose ))
-                return false;
-
-        // Pair processing does not abort execution, but pairs can be discarded
-        for (size_t i = 0; i < pairs.size(); i++)
-            pairs[i].checkHomography( this->matcher, 3.0, verbose );
-
-        // Make the measurement selection process
-        makePointList(verbose);
-
-        // Report main parts time consumption when prompted
-        if (verbose) {
-            // TODO: adicionar os tempos de correlação e o consumo de memória
-            // Make zero allocated durations
-            std::chrono::duration<double, std::milli> read, detect, descript, match, correct;
-            read = detect = descript = match = correct = std::chrono::duration<double, std::milli>::zero();
-            size_t m_read = 0, m_detect = 0, m_descript = 0;
-            // Sum ellapsed time
-            for (size_t i = 0; i < images.size(); i++) {
-                read += images[i].t_read;
-                detect += images[i].t_detect;
-                descript += images[i].t_descript;
-                m_read += images[i].m_read;
-                m_detect += images[i].m_detect;
-                m_descript += images[i].m_descript;
-            }
-            for (size_t i = 0; i < pairs.size(); i++) {
-                // TODO: Devemos contar o tempo mesmo de pares descartados?
-                match += pairs[i].t_match;
-                correct += pairs[i].t_correct;
-            }
-            // And report it
-            std::cout << "Total time reading images: " << read.count() << "\n";
-            std::cout << "Total time on keypoints detection: " << detect.count() << "\n";
-            std::cout << "Total time on keypoints description: " << descript.count() << "\n";
-            std::cout << "Total time on matching keypoints: " << match.count() << "\n";
-            std::cout << "Total time on geometry verification: " << correct.count() << "\n";
-
-            std::cout << "Total memory usage on reading images: " << HUMAN_READABLE(m_read) << "\n";
-            std::cout << "Total memory usage on keypoints detection: " << HUMAN_READABLE(m_detect) << "\n";
-            std::cout << "Total memory usage on keypoints description: " << HUMAN_READABLE(m_descript) << "\n";
-        }
-        return true;
-    }
-
-    bool ProcessController::saveResults() {
-        // TODO: revisar o salvamento e garantir o uso de argumentos
-
-        std::ofstream imageMeasures("final_Matches_AKAZE.txt");
-        if (imageMeasures.is_open()) {
-            for (auto point = points.begin(); point != points.end(); point++)
-            {
-                if (point->index != 0)
-                {
-                    if (point != points.begin())
-                        imageMeasures << std::endl;
-                    size_t n = point->measures.size();
-                    for (size_t i = 0; i < n; i++)
-                        imageMeasures << point->measures[i].index << "\t"
-                                      << point->index << "\t"
-                                      << point->measures[i].pt.x << "\t"
-                                      << point->measures[i].pt.y << ((i == n-1)?"":"\n");
-                }
-            }
-            imageMeasures.close();
-        }
-        else {
-            std::cerr << "Failed to create file: " << "final_Matches_AKAZE.txt" << std::endl;
-            return false;
-        }
-
-        std::ofstream pointENH("final_ENH_AKAZE.txt");
-        if (pointENH.is_open()) {
-            for (auto point = points.begin(); point != points.end(); point++)
-            {
-                if (point->index != 0)
-                {
-                    if (point != points.begin())
-                        pointENH << std::endl;
-                    pointENH << point->index << "\t" << "Photogrammetric" << "\t"
-                             << "0" << "\t" << "0" << "\t" << "0" << "\t"
-                             << "0" << "\t" << "0" << "\t" << "0";
-                }
-            }
-            pointENH.close();
-        }
-        else {
-            std::cerr << "Failed to create file: " << "final_ENH_AKAZE.txt" << std::endl;
-            return false;
-        }
-
-        return true;
-    }
-
-    void ProcessController::printUsage() {
-        parser->printMessage();
     }
 
 }

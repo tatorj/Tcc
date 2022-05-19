@@ -1,4 +1,17 @@
-/* Tests for final version of Luiz Otávio's TCC */
+/* Copyright 2022 Luiz Otavio Soares de Oliveira by FEN/UERJ
+ * This file is part of the final version of the TCC by Luiz Otavio, as 
+ * a requirement for obtaining a degree at this public university under 
+ * guidance of Irving Badolato professor.
+ * The resulting software is free: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GNU GPL) as 
+ * published by the Free Software Foundation, either version 3 of the 
+ * License, or (at your option) any later version.
+ * Our code is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ * Read the GNU GPL for more details. To obtain a copy of this license 
+ * see <http://www.gnu.org/licenses/>.
+ */
 
 #include "control.hpp"
 #include "macros.hpp"
@@ -30,7 +43,7 @@ bool ProcessController::readArguments(int argc, char **argv) {
             "{mode       m|FILE  |select mode of pair aquisition between SEQUENCE, ALL or FILE guided}"
             "{n_measures n|0     |filter points by a minimum (n) of image measurements}"
             "{limit_out  o|0     |limit size of measurements per pair on the output}"
-            "{list_pairs l|      |write a list of pairs that can have a geometric solution instead of a list of measures}"
+            "{list_pairs l|0.0   |write a list of pairs, instead of list of measures, keeping those that can have a geometric solution with an inlier rate (l)}"
             "{residue    r|2.0   |define maximum residue for geometric solution}"
             "{scale      s|1     |a scale denominator to reduce the images size}"
             "{verbose    v|      |show all internal process messages}";
@@ -42,7 +55,6 @@ bool ProcessController::readArguments(int argc, char **argv) {
     verbose = parser->has("verbose");
     crosscheck = parser->has("crosscheck");
     limitkpts = parser->has("force_f");
-    scapePointList = parser->has("list_pairs");
 
     mode = parser->get<std::string>("mode");
     imagelist = parser->get<std::string>("@imagelist");
@@ -55,8 +67,10 @@ bool ProcessController::readArguments(int argc, char **argv) {
     nMeasures = parser->get<size_t>("n_measures");
     limitMatches = parser->get<size_t>("limit_out");
     imageScale = parser->get<size_t>("scale");
-    residue = parser->get<double>("residue");
     nfeatures = parser->get<int>("number_f");
+    residue = parser->get<double>("residue");
+    inlierRate = parser->get<double>("list_pairs");
+    scapePointList = (inlierRate > 0.0) && (inlierRate <= 1.0);
     if (!parser->check())
     {
         parser->printErrors();
@@ -97,9 +111,9 @@ bool ProcessController::readArguments(int argc, char **argv) {
             matcher = cv::makePtr<cv::BFMatcher>(cv::NORM_L2, crosscheck);
     }
     else {
-        // TODO: Determinar melhor os parametros mais adequados para o LSH
+        // @TODO: Find better guidance on how lsh index parameters can be varied as data volume increases
         if (detectorType == "AKAZE" || detectorType == "ORB")
-            matcher = cv::makePtr<cv::FlannBasedMatcher>( cv::makePtr<cv::flann::LshIndexParams>(3,20,2) );
+            matcher = cv::makePtr<cv::FlannBasedMatcher>( cv::makePtr<cv::flann::LshIndexParams>(1,20,2) );
         else
             matcher = cv::makePtr<cv::FlannBasedMatcher>( );
     }
@@ -195,7 +209,12 @@ bool ProcessController::runProcesses() {
 
     // Pair processing does not abort execution, but pairs can be discarded
     for (size_t i = 0; i < pairs.size(); i++)
-        pairs[i].checkHomography( this->matcher, residue, limitMatches, crosscheck, verbose );
+        pairs[i].checkHomography( this->matcher,
+                                  residue,
+                                  limitMatches,
+                                  crosscheck,
+                                  inlierRate,
+                                  verbose );
 
     // Make the measurement selection process
     if (scapePointList) {
@@ -254,13 +273,14 @@ bool ProcessController::saveResults() {
     if (scapePointList) {
         std::ofstream pairsList(resultname);
         if (pairsList.is_open()) {
-            size_t count = 0;
+            bool flag = false;
             for (size_t i = 0; i < pairs.size(); i++) {
                 if (!pairs[i].discarded) {
-                    if (count > 0)
+                    if (flag)
                         pairsList << std::endl;
+                    else
+                        flag = true;
                     pairsList << pairs[i].left->index << "\t" << pairs[i].right->index;
-                    count++;
                 }
             }
             pairsList.close();
@@ -275,10 +295,13 @@ bool ProcessController::saveResults() {
     // Save the main results, all digital images measurements
     std::ofstream imageMeasures(resultname);
     if (imageMeasures.is_open()) {
+        bool flag = false;
         for (auto point = points.begin(); point != points.end(); point++) {
             if (point->index != 0) {
-                if (point != points.begin())
+                if (flag)
                     imageMeasures << std::endl;
+                else
+                    flag = true;
                 size_t n = point->measures.size();
                 for (size_t i = 0; i < n; i++)
                     imageMeasures << point->measures[i].index << "\t"
@@ -297,10 +320,13 @@ bool ProcessController::saveResults() {
     if (!pointsname.empty()) {
         std::ofstream pointENH(pointsname);
         if (pointENH.is_open()) {
+            bool flag = false;
             for (auto point = points.begin(); point != points.end(); point++) {
                 if (point->index != 0) {
-                    if (point != points.begin())
+                    if (flag)
                         pointENH << std::endl;
+                    else
+                        flag = true;
                     pointENH << point->index << "\t" << "Photogrammetric" << "\t"
                              << "0" << "\t" << "0" << "\t" << "0" << "\t"
                              << "0" << "\t" << "0" << "\t" << "0";
@@ -393,7 +419,6 @@ void ProcessController::makePointList(bool verbose) {
             }
         }
     }
-    // Ordenar por número de medidas
     // Apply indexes to points
     size_t stichesCount = m_stich = 0;
     for (auto point = points.begin(); point != points.end(); point++) {

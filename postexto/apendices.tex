@@ -1,0 +1,71 @@
+% ----------------------------------------------------------
+% Apêndices (opcionais)
+% ----------------------------------------------------------
+% ---
+% Inicia os apêndices
+% ---
+\appendix
+
+%=====================================================================
+\postextualchapter{ Código fonte }\label{codigofonte}
+
+\section{Arquivo de configuração do projeto}
+\subsection{src/CMakeLists.txt}
+\lstinputlisting[language={}]{src/CMakeLists.txt}
+
+\section{Arquivos de cabeçalho}
+\subsection{src/macros.hpp}
+\lstinputlisting[]{src/macros.hpp}
+\subsection{src/point.hpp}
+\lstinputlisting[]{src/point.hpp}
+\subsection{src/image.hpp}
+\lstinputlisting[]{src/image.hpp}
+\subsection{src/pair.hpp}
+\lstinputlisting[]{src/pair.hpp}
+\subsection{src/control.hpp}
+\lstinputlisting[]{src/control.hpp}
+
+\section{Arquivos de implementação}
+\subsection{src/point.cpp}
+\lstinputlisting[]{src/point.cpp}
+\subsection{src/image.cpp}
+\lstinputlisting[]{src/image.cpp}
+\subsection{src/pair.cpp}
+\lstinputlisting[]{src/pair.cpp}
+\subsection{src/control.cpp}
+\lstinputlisting[]{src/control.cpp}
+\subsection{src/main.cpp}
+\lstinputlisting[]{src/main.cpp}
+
+
+%=====================================================================
+\postextualchapter{ Padrões para definir regiões de interesse de gruber}\label{pattern}
+
+\section{Implementação dos padrões em formato ASCII Portable GrayMap}
+\subsection{Padrão 2-2-2 implementado no arquivo data/pattern0.pgm}
+\lstinputlisting[basicstyle=\scriptsize\ttfamily,language={}]{data/pattern0.pgm}
+\subsection{Padrão 3-3-3 implementado no arquivo data/pattern1.pgm}
+\lstinputlisting[basicstyle=\scriptsize\ttfamily,language={}]{data/pattern1.pgm}
+\subsection{Padrão 5-5-5 implementado no arquivo data/pattern2.pgm}
+\lstinputlisting[basicstyle=\scriptsize\ttfamily,language={}]{data/pattern2.pgm}
+\subsection{Padrão 3-2-3-2-3 implementado no arquivo data/pattern3.pgm}
+\lstinputlisting[basicstyle=\scriptsize\ttfamily,language={}]{data/pattern3.pgm}
+
+\begin{figure}[!ht]{12.7cm}
+\subsection{Visualização dos padrões implementados}
+  \caption{Padrões interpolados para imagens de 360x360 pixels}
+  \subfloat[][]{\label{pattern0}
+    \setlength{\fboxsep}{0pt}
+    \fbox{\includegraphics[width=0.5\hsize]{data/pattern0.png}}}
+  \subfloat[][]{\label{pattern1}
+    \setlength{\fboxsep}{0pt}
+    \fbox{\includegraphics[width=0.5\hsize]{data/pattern1.png}}}\\
+  \subfloat[][]{\label{pattern2}
+    \setlength{\fboxsep}{0pt}
+    \fbox{\includegraphics[width=0.5\hsize]{data/pattern2.png}}}
+  \subfloat[][]{\label{pattern3}
+    \setlength{\fboxsep}{0pt}
+    \fbox{\includegraphics[width=0.5\hsize]{data/pattern3.png}}}\\
+  \legend{Visualização dos padrões de gruber implementados a saber:\\ \ref{pattern0} 2-2-2; \ref{pattern1} 3-3-3; \ref{pattern2} 5-5-5; \ref{pattern3} 3-2-3-2-3.}
+  \source{O autor.}
+\end{figure}

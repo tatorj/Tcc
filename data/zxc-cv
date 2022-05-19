@@ -1,0 +1,98 @@
+#!/bin/bash
+
+echo "OpenCV installation by Badolato (based on learnopencv.com)"
+echo "This script has been tested on ubuntu 20.04 and may require modification to newer versions."
+
+# Check if has arguments supplied
+if [[ $# -eq 0 ]] ; then
+    echo 'Usage:'
+    echo '\tzxc-cv some-version-number'
+    echo 'Sample:'
+    echo '\tzxc-cv 3.4.8'
+    exit 1
+fi
+
+# Define version
+cvVersion=$1
+
+# Save current working directory
+cwd=$(pwd)
+
+#echo "Update Packages"
+apt -y update
+
+echo "Install OS Libraries"
+apt -y remove x264 libx264-dev
+apt -y install build-essential checkinstall cmake pkg-config yasm
+apt -y install git gfortran
+apt -y install libjpeg8-dev libpng-dev
+apt -y install software-properties-common
+apt -y install jasper libxine2-dev libv4l-dev
+cd /usr/include/linux
+ln -s -f ../libv4l1-videodev.h videodev.h
+cd "$cwd"
+apt -y install libgstreamer1.0-dev libgstreamer-plugins-base1.0-dev
+apt -y install libgtk2.0-dev libtbb-dev qt5-default
+apt -y install libatlas-base-dev
+apt -y install libfaac-dev libmp3lame-dev libtheora-dev
+apt -y install libvorbis-dev libxvidcore-dev
+apt -y install libopencore-amrnb-dev libopencore-amrwb-dev
+apt -y install libavresample-dev
+apt -y install x264 v4l-utils
+apt -y install libprotobuf-dev protobuf-compiler
+apt -y install libgoogle-glog-dev libgflags-dev
+apt -y install libgphoto2-dev libeigen3-dev libhdf5-dev doxygen
+
+echo "Download and clean build directories to installation"
+git clone https://github.com/opencv/opencv.git ~/opencv
+cd ~/opencv
+git checkout $cvVersion
+cd ..
+git clone https://github.com/opencv/opencv_contrib.git
+cd opencv_contrib
+git checkout $cvVersion
+cd "$cwd"
+rm -rf ~/opencv/build
+rm -rf ~/opencv_contrib/build
+mkdir /usr/local/opencv-"$cvVersion"
+
+echo "Install Python Libraries"
+apt-get -y install python3-dev python3-pip python3-venv python3-testresources
+cd /usr/local/
+python3 -m venv opencv-"$cvVersion"-py3
+echo "# Virtual Environment Wrapper" >> ~/.bashrc
+echo "alias workoncv-$cvVersion=\"source /usr/local/opencv-$cvVersion-py3/bin/activate\"" >> ~/.bashrc
+source /usr/local/opencv-"$cvVersion"-py3/bin/activate
+pip install wheel numpy scipy matplotlib scikit-image scikit-learn ipython  
+deactivate
+cd "$cwd"
+
+echo "Compile and install OpenCV with contrib modules"
+cd ~/opencv
+mkdir build
+cd build
+cmake   -D CMAKE_BUILD_TYPE=RELEASE \
+	-D CMAKE_INSTALL_PREFIX=/usr/local/opencv-"$cvVersion" \
+	-D WITH_TBB=ON \
+	-D WITH_V4L=ON \
+	-D WITH_QT=ON \
+	-D WITH_OPENGL=ON \
+	-D WITH_CUDA=ON \
+	-D ENABLE_FAST_MATH=1 \
+	-D CUDA_FAST_MATH=1 \
+	-D WITH_CUBLAS=1 \
+	-D BUILD_EXAMPLES=ON \
+	-D INSTALL_C_EXAMPLES=ON \
+	-D INSTALL_PYTHON_EXAMPLES=ON \
+	-D BUILD_opencv_python2=OFF \
+	-D BUILD_opencv_python3=ON \
+	-D OPENCV_PYTHON3_INSTALL_PATH=~/opencv-"$cvVersion"-py3/lib/python3.6/site-packages \
+	-D PYTHON3_EXECUTABLE=~/opencv-"$cvVersion"-py3/bin/python \
+	-D PYTHON3_LIBRARY=/usr/lib/python3.6/config-3.6m-x86_64-linux-gnu/libpython3.6.so \
+	-D PYTHON3_PACKAGES_PATH=~/opencv-"$cvVersion"-py3/lib/python3.6/site-packages \
+	-D PYTHON3_NUMPY_INCLUDE_DIRS=~/opencv-"$cvVersion"-py3/lib/python3.6/site-packages/numpy/core/include/ \
+	-D OPENCV_ENABLE_NONFREE=ON \
+	-D OPENCV_EXTRA_MODULES_PATH=~/opencv_contrib/modules ..
+
+make -j6
+make install

@@ -1,0 +1,2 @@
+# ELEMENTOS PRE-TEXTUAIS
+Configurações do volume como título, orientadores e data de defesa, além das folhas de aprovação e ficha catalográfica encontram-se neste diretório. Partes que antecedem o trabalho incluem lista de abreviaturas, resumo (e abstract), agradecimentos, dedicatória e etc.

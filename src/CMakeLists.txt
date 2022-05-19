@@ -8,5 +8,5 @@ endif()
 
 include_directories( ${OpenCV_INCLUDE_DIRS} )
 FILE(GLOB Sources *.cpp)
-add_executable( main ${Sources})
-target_link_libraries( main ${OpenCV_LIBS} )
+add_executable( lo_main ${Sources})
+target_link_libraries( lo_main ${OpenCV_LIBS} )

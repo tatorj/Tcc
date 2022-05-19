@@ -1,0 +1,159 @@
+% --------------------------------------------------------------------
+% Modelo de Trabalho Acadêmico utilizando classe repUERJ para elaboração
+% de teses, dissertação e trabalhos monográficos em geral.
+% Este arquivo está editado na codificação de caracteres UTF-8.
+% As referencia estão baseadas no modelo bibtex e citação em autor-data.
+
+% Este modelo foi adaptado pelo Prof. Irving Badolato
+% Professor Assistente do Departamento de Engenharia Cartográfica
+% Faculdade de Engenharia - FEN / Centro de Tecnologia e Ciências - CTC
+% Universidade do Estado do Rio de Janeiro - UERJ
+
+% A classe repUERJ.cls foi criada pelo Prof. Luís Fernando de Oliveira 
+% do Instituto de Física, a partir do código original disponibilizado 
+% pelo grupo CódigoLivre (coordenado por Gerald Weber).
+% Foram feitas adequações para uso pelos alunos do curso de graduação 
+% em Engenharia Cartográfica em acordo com as normas de elaboração de 
+% teses e dissertações da UERJ.
+
+% Os estilos repUERJformat.sty codificam os elementos pré-textuais e
+% pós-textuais.
+% O estilo repUERJpseudocode.sty codifica a elaboração de algoritmos
+% utilizando um glossário desenvolvido pelo prof. Luís Fernando usado 
+% em seu curso de Física Computacional.
+
+% Este material está disponível também em:
+% http://www.eng.uerj.br/~irvingbadolato/latex
+
+% As normas da UERJ para elaboração de teses e dissertações pode ser
+% obtidas no documento disponível no site:
+% http://www.bdtd.uerj.br/roteiro_uerj_web.pdf
+
+% --------------------------------------------------------------------
+\documentclass[a4paper,12pt,oneside,onecolumn,final,fleqn]{formato/repUERJ}
+
+% ********************************************************************
+% Definição dos pacotes em uso neste documento
+\include{formato/pacotes}
+% ********************************************************************
+
+
+% ********************************************************************
+% Informações de autoria e institucionais
+\include{pretexto/configAutor}
+% ********************************************************************
+
+% ********************************************************************
+% Início do documento
+\begin{document}
+% ********************************************************************
+% Configuração para iluminação de códigos
+\include{formato/linguagens}
+
+% ----------------------------------------------------------
+% ELEMENTOS PRE-TEXTUAIS
+\frontmatter
+\capa
+\folhaderosto
+
+% ----------------------------------------------------------
+% Inserir a ficha catalográfica
+% ----------------------------------------------------------
+% A biblioteca deverá providenciar a ficha catalográfica. Salve a ficha no formato PDF.
+% Use o nome do arquivo PDF como argumento do comando. Exemplo: 
+% Ficha catalográfica no arquivo 'ficha.pdf'
+%\fichacatalografica{ficha.pdf}
+% Enquanto não possuir a ficha catalográfica, use o comando sem argumentos...
+\fichacatalografica{pretexto/ficha.pdf}
+%\fichacatalografica{}
+
+
+% ----------------------------------------------------------
+% Folha de aprovação
+% ----------------------------------------------------------
+% membros da banca: máximo 6
+%\include{pretexto/folhaAprov}
+\fichacatalografica{pretexto/aprov_loso.pdf}
+% ----------------------------------------------------------
+% Dedicatória
+% ----------------------------------------------------------
+\include{pretexto/dedicatoria}
+
+% ----------------------------------------------------------
+% Agradecimentos
+% ----------------------------------------------------------
+\include{pretexto/agradecimento}
+
+% ----------------------------------------------------------
+% Epigrafe (opcional)
+% ----------------------------------------------------------
+\include{pretexto/epigrafe}
+
+% ----------------------------------------------------------
+% RESUMO
+% ----------------------------------------------------------
+\include{pretexto/resumo}
+
+% ----------------------------------------------------------
+% Abstract
+% ----------------------------------------------------------
+\include{pretexto/abstract}
+
+% ----------------------------------------------------------
+% Listas de ilustrações e tabelas
+% ----------------------------------------------------------
+\listadefiguras
+\listadetabelas
+
+% ----------------------------------------------------------
+% Outras listas
+% ----------------------------------------------------------
+%\listadealgoritmos
+
+% ----------------------------------------------------------
+% Lista de abreviaturas e siglas
+% ----------------------------------------------------------
+\include{pretexto/abreviatura}
+%\include{pretexto/simbolos}
+
+% ----------------------------------------------------------
+% Sumario
+% ----------------------------------------------------------
+\sumario
+
+% ----------------------------------------------------------
+% ELEMENTOS TEXTUAIS
+% ----------------------------------------------------------
+\mainmatter
+%\include{capitulos/ch0_brief}
+\include{capitulos/ch0}
+\include{capitulos/ch1}
+\include{capitulos/ch2}
+\include{capitulos/ch3}
+\include{capitulos/ch4}
+
+% ----------------------------------------------------------
+% ELEMENTOS POS-TEXTUAIS
+% ----------------------------------------------------------
+\backmatter
+
+%================================================================
+% Referencias via BibTeX
+%================================================================
+\citeoption{abnt-options4}
+\bibliography{bibliografia}
+
+%================================================================
+% Apêndices e anexos
+%================================================================
+% \include{postexto/glossario} 
+\include{postexto/apendices}
+\include{postexto/anexos}
+
+%---------------------------------------------------------------------
+% INDICE REMISSIVO (relativo ao makeindex)
+%---------------------------------------------------------------------
+\printindex
+
+%=====================================================================
+\end{document}

@@ -1,0 +1,25 @@
+\pretextualchapter{Resumo}
+
+\fazreferencia
+
+% Indicativo do trabalho:
+% Entendimento do trabalho sem precisar ler o trabalho todo
+% somente um parágrafo de 150 a 500 palavras segundo abnt,
+% frases afirmativas curtas em voz ativa, 3 pessoa singular
+
+% O que é (contexto)
+A fotogrametria é uma das principais áreas de estudo em cursos de engenharia cartográfica. Ela é capaz de realizar a reconstrução métrica de espaços tridimensionais com base num par, ou mais, de fotografias de um mesmo objeto.
+Para alcançar esse objetivo tipicamente é necessário um conjunto de observações de pontos comuns nessas imagens.
+Este conjunto de medidas viabiliza a ligação ou costura de imagens, mas pode ser um processo extremamente custoso, pois aumenta em complexidade com número de imagens. Esta ligação foi por muitos anos feita manualmente, contudo tende a cair em desuso graças a rápida evolução tecnológica, que possibilita o uso de imagens digitais e processos de automação. 
+% Por quê? (Descreva o objetivo do trabalho):
+Tendo em vista a aplicação para ensino de fotogrametria digital desenvolvida como software livre na Universidade do Estado do Rio de Janeiro no Projeto E-Foto, o e-foto, este trabalho foca-se no estudo de ferramentas de visão computacional, outra área do saber intimamente ligada à fotogrametria, que permita a automação de medidas ou pontos de costura para conjuntos de imagens. Para mais, a visão computacional é uma das partes da área de inteligência artificial e assim preocupa-se com a interpretação, além da geometria, ao lidar com imagens.
+% Como? (Método utilizado):
+Logo, é vital estudar bibliotecas para desenvolvimento de aplicações que implementem trabalhos desta área, como o OpenCV, e comparar as ferramentas disponíveis que possam ser úteis ao e-foto. Deste modo, foram definidos critérios de análise distintos, tais como tempo de execução, consumo de memória, qualidade do ajustamento, quantidade de respostas, sua distribuição e capacidade de restringir ou filtrar tais resultados. Foi codificada uma aplicação de linha de comando, de modo que possa ser integrada ao e-foto, que pode fazer uso de diversos algoritmos, a escolha do usuário, para a detecção e descrição de pontos chave para feições em imagens. Estas feições descritas podem ser caracterizadas por grande invariância de termos de rotação, escala e iluminação, de modo que pode ser feita a correlação de pares de imagens mesmo quando não há estabilidade da plataforma fotográfica usada. Contudo, faz-se importante a conferência das correlações adotando uma solução geométrica, como a da transformação homográfica, para robustecer os resultados.
+% Resultados:
+Para demonstrar nossa aplicação foram usadas imagens de exemplo do Projeto E-Foto, além de conjuntos maiores em casos específicos, onde o conjunto não poderia atender as necessidades dos testes planejados. Foram tabeladas as respostas comparando os algoritmos SIFT, SURF, ORB e AKAZE, tendo todos estes demonstrado capacidade de produzir um número de resultados satisfatórios. Foram usadas diferentes estratégias de correlação para entendimento dos possíveis impactos ao fluxo da aplicação quando variada a volumetria de feições.
+% Conclui-se que:
+Destacam-se entre os algoritmos estudados para extrair feições o ORB e SIFT, tendo estes se destacado em tempo e qualidade, respectivamente. Para estratégia de correlação fica recomendado uso de correlação cruzada apenas em pequenos conjuntos de feições.
+% Link from sources:
+Os resultados deste trabalho estão disponíveis em \url{https://github.com/tatorj/Tcc}.
+
+\imprimirchaves

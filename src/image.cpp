@@ -1,4 +1,17 @@
-/* Tests for final version of Luiz Otávio's TCC */
+/* Copyright 2022 Luiz Otavio Soares de Oliveira by FEN/UERJ
+ * This file is part of the final version of the TCC by Luiz Otavio, as 
+ * a requirement for obtaining a degree at this public university under 
+ * guidance of Irving Badolato professor.
+ * The resulting software is free: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License (GNU GPL) as 
+ * published by the Free Software Foundation, either version 3 of the 
+ * License, or (at your option) any later version.
+ * Our code is distributed in the hope that it will be useful, but 
+ * WITHOUT ANY WARRANTY; without even the implied warranty of 
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. 
+ * Read the GNU GPL for more details. To obtain a copy of this license 
+ * see <http://www.gnu.org/licenses/>.
+ */
 
 #include <algorithm>
 #include <random>

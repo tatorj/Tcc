@@ -1,0 +1,20 @@
+\pretextualchapter{Abstract}
+
+\doreference
+
+% What?
+Photogrammetry is one of the main areas of study in cartographic engineering courses. It's capable of performing the metric reconstruction of three-dimensional spaces based on a pair, or more, of photographs of the same object.
+To achieve this objective, a set of observations of common points in these images is typically required.
+This set of measurements makes it possible to link or stitch images, but it can be an extremely expensive process, as it increases in complexity with the number of images. This connection was made manually for many years, however, it tends to fall into disuse thanks to rapid technological developments, which allow the use of digital images and automation processes.
+% Because?
+Considering the application for teaching digital photogrammetry developed as free software at the State University of Rio de Janeiro in the E-Foto Project, e-foto, this work focuses on the study of computer vision tools, another area of knowledge closely linked to photogrammetry, which allows for the automation of measurements or stitch points for sets of images. Furthermore, computer vision is only one part of the field of artificial intelligence and thus it is concerned with interpretation, in addition to geometry, when dealing with images.
+% As?
+Therefore, it is vital to study libraries for the development of applications that implement works in this area, such as OpenCV, and to compare the available tools that may be useful to e-foto. In this way, different analysis criteria were defined, such as execution time, memory consumption, quality of adjustment, quantity of responses, their distribution and the ability to restrict or filter such results. A command line application was coded so that it can be integrated into e-foto, which can make use of different algorithms, chosen by the user, for detection and description of key points for features in images. The features described can be characterized by high invariance in terms of rotation, scale and illumination, so that image pairs can be correlated even when the photographic platform used is not stable. However, it is important to check the correlations by adopting a geometric solution, such as the homographic transformation, in order to strengthen the results.
+% Result:
+In order to demonstrate our application, example images from the E-Foto Project were used, as well as larger sets in specific cases, where the set could not meet the needs of the planned tests. The answers were tabulated comparing the SIFT, SURF, ORB and AKAZE algorithms, all of which demonstrated the ability to produce a number of satisfactory results. Different correlation strategies were used to understand the possible impacts on the application flow when the feature volume was varied.
+% Conclusion:
+Among the algorithms studied to extract features, the ORB and SIFT stand out, and they do so in terms of time and quality, respectively. For correlation strategy, it is recommended to use cross-correlation only in small sets of features.
+% Link from sources:
+The results of this work are available at \url{https://github.com/tatorj/Tcc}.
+
+\printkeys

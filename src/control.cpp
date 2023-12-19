@@ -95,9 +95,12 @@ bool ProcessController::readArguments(int argc, char **argv) {
     else if (detectorType == "SIFT") {
         detector = cv::SIFT::create();
     }
+    //Enabling SURF use only when NONFREE is available
+#ifdef NONFREEAVAILABLE
     else if (detectorType == "SURF") {
         detector = cv::xfeatures2d::SURF::create();
     }
+#endif
     else {
         std::cerr << "Unexpected detector type!\n";
         return false;
